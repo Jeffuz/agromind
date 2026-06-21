@@ -1,34 +1,142 @@
-# agromind
-AgroMind is an AI greenhouse intelligence platform that combines environmental monitoring and autonomous scouting robots to build a live model of crop health and recommend interventions before disease outbreaks spread.
+# AgroMind
 
-The backend includes the trained tomato disease classifier and robot-image integration. See [backend/README.md](backend/README.md) for setup and API usage.
+AI greenhouse intelligence platform. An autonomous scouting robot traverses a generated farm, classifies plant disease using a CV model, and updates a Bayesian belief map. A Markov Decision Process guides the robot toward disease clusters. A Fetch.ai agent reasons over the completed scan and delivers a structured farm health report.
 
-## Simulation Model
+---
 
-The frontend simulation generates hidden disease pressure from greenhouse sensors and spatial hotspots. Environment risk is a simple heuristic blend of humidity, soil moisture, low light, and mild temperature, then it is mixed with cluster strength so the greenhouse looks patchy instead of random. Each plant gets a hidden `trueLabel`, an `actualRisk`, and a class-matched `imageUrl` from:
+## Architecture
 
-- `frontend/public/tomato/healthy`
-- `frontend/public/tomato/early_blight`
-- `frontend/public/tomato/late_blight`
-- `frontend/public/tomato/leaf_mold`
+```
+frontend (Next.js :3000)
+    ↕  REST
+backend (FastAPI :8000)
+    ↕  HTTP
+Fetch.ai farm_analyst agent (:8001 uAgent protocol · :8002 REST companion)
+    ↕  NVIDIA API
+Nemotron (nvidia/llama-3.1-nemotron-nano-8b-v1)
+```
 
-Mock CV inspection is frontend-only for now. When you inspect a selected plant, the app uses the hidden `trueLabel` internally, returns a deterministic confidence, and updates belief with:
+---
 
-`uncertainty = 1 - confidence`
+## Prerequisites
 
-`beliefRisk = severity[prediction] * confidence + priorRisk * uncertainty`
+- Windows 11 with WSL2 enabled (`wsl --install`)
+- Node.js 20+ inside WSL2
+- Python 3.12 inside WSL2
+- NVIDIA API key (free tier at [build.nvidia.com](https://build.nvidia.com))
 
-Severity values:
+---
 
-- `healthy = 0.0`
-- `leaf_mold = 0.55`
-- `early_blight = 0.70`
-- `late_blight = 0.90`
+## 1 — Clone into WSL2
 
-This is an MVP heuristic, not a calibrated plant pathology model or a lesion-coverage classifier. The real backend CV flow will replace the mock step later.
+Always work from the WSL2 native filesystem to avoid Windows path-length issues with npm and pip.
 
-## Autonomous Scouting Loop
+```bash
+# inside WSL2 terminal
+git clone <repo-url> ~/agromind
+cd ~/agromind
+```
 
-The frontend currently owns the scouting loop for the hackathon MVP. When you click `Run Agent Step`, the app picks a target plant, plans a simple Manhattan path across the frontend greenhouse grid, animates the robot cell by cell, pauses in a processing state, and then runs the same mock CV inspection flow used for manual selection.
+---
 
-The backend pathing is not used yet because the frontend greenhouse grid is `20x40` and the backend MDP grid is different. The loop updates the selected plant, belief map, metrics, agent log, and recommendation only after the mock inspection finishes.
+## 2 — Backend setup
+
+```bash
+cd ~/agromind/backend
+
+# create venv
+python3 -m venv ~/.venvs/agromind
+source ~/.venvs/agromind/bin/activate
+
+# install dependencies
+pip install -r requirements.txt
+```
+
+Create `backend/.env`:
+
+```env
+NVIDIA_API_KEY=your_nvidia_api_key_here
+FARM_ANALYST_URL=http://localhost:8002
+```
+
+---
+
+## 3 — Frontend setup
+
+```bash
+cd ~/agromind/frontend
+npm install
+```
+
+---
+
+## Running
+
+You need **three terminals** inside WSL2, all with the venv active.
+
+### Terminal 1 — FastAPI backend
+
+```bash
+source ~/.venvs/agromind/bin/activate
+cd ~/agromind/backend
+uvicorn main:app --port 8000
+```
+
+### Terminal 2 — Fetch.ai farm analyst agent
+
+```bash
+source ~/.venvs/agromind/bin/activate
+cd ~/agromind/backend
+python -m agents.farm_analyst
+```
+
+The agent registers on Agentverse automatically. You will see its address logged:
+```
+farm_analyst online | address: agent1q...
+```
+
+### Terminal 3 — Frontend
+
+```bash
+cd ~/agromind/frontend
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Usage
+
+1. **Configure** — set greenhouse conditions (humidity, temperature, light, soil moisture) on the home screen and click **Launch Simulation**
+2. **Scout** — on the dashboard, click **Run Agent Step** to move the robot one cell at a time, or **Auto Run** to let it traverse the full farm autonomously
+3. **Analyse** — when all plants are inspected the Fetch.ai agent automatically reasons over the belief map and populates the **Recommendation** panel with a structured farm health report
+
+The **Reveal Ground Truth** toggle shows the hidden disease distribution for comparison against the robot's belief map.
+
+---
+
+## API reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/farm/agent/step` | Run MDP on frontend belief grid, return next cell |
+| `POST` | `/farm/analyze` | Delegate to Fetch.ai agent → Nemotron analysis |
+| `POST` | `/cv/predict` | Classify a leaf image with the MobileNetV2 model |
+| `GET`  | `/cv/health` | Verify CV model is loaded |
+| `GET`  | `/farm/grid` | Current observed belief grid |
+| `POST` | `/farm/reset` | Reset all observations |
+
+Full interactive docs at `http://localhost:8000/docs`.
+
+---
+
+## Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NVIDIA_API_KEY` | Yes | NVIDIA NIM API key for Nemotron |
+| `FARM_ANALYST_URL` | No | URL of the farm analyst companion API (default `http://localhost:8002`) |
+| `FARM_ANALYST_SEED` | No | Deterministic seed for the Fetch.ai agent identity |
+| `AGROMIND_CV_MODEL_PATH` | No | Override path to the `.keras` model file |
+| `AGROMIND_CV_CLASSES_PATH` | No | Override path to `class_names.json` |
