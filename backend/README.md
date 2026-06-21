@@ -35,17 +35,16 @@ curl -X POST http://localhost:8000/cv/predict \
 
 ```bash
 curl -X POST "http://localhost:8000/farm/visit/image?row=2&col=3" \
-  -F "plantId=plant_042" \
   -F "file=@tests/sample_early_blight.jpg"
 ```
 
-The image-visit route stores the current fixed severity mapping as the grid score, then asks the existing MDP for the next cell. The value is a simulation disease-risk proxy, not measured lesion coverage.
+The image-visit route creates the canonical ID `plant_02_03`, blends CV severity and confidence with the unknown-plant prior, stores the resulting belief risk, then asks the existing MDP for the next cell.
 
 ## Endpoints
 
 - `GET /cv/health` loads and verifies the model artifacts.
 - `POST /cv/predict` returns `plantId`, `prediction`, `confidence`, and `severity`.
-- `POST /farm/visit/image` additionally records severity in the observed grid and returns the existing route recommendation.
+- `POST /farm/visit/image` records confidence-aware belief risk in the observed grid and returns the existing route recommendation.
 - Existing `/farm/*` simulation endpoints are unchanged.
 
 Uploads must be readable images and are limited to 10 MB. Override packaged artifacts with `AGROMIND_CV_MODEL_PATH` and `AGROMIND_CV_CLASSES_PATH` if needed.
@@ -56,6 +55,9 @@ Uploads must be readable images and are limited to 10 MB. Override packaged arti
 ruff check .
 python -m pytest -q
 python -m scripts.benchmark_cv tests/sample_early_blight.jpg
+python -m scripts.smoke_robot_contract
 ```
 
 The packaged model was trained on PlantVillage's four tomato classes. Its held-out PlantVillage test accuracy is 95.36% with 95.17% macro F1. Controlled-background accuracy should not be presented as real-greenhouse accuracy.
+
+The robot-facing request and response contract is documented in [ROBOT_HANDOFF.md](ROBOT_HANDOFF.md).

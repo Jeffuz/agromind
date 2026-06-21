@@ -4,9 +4,11 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 import farm
+from belief import DEFAULT_PRIOR_RISK, update_belief
 from cv_service import ModelUnavailableError, model_status, predict_image
 from farm import GRID_SIZE, TRUE_GRID
 from mdp import value_iteration, follow_policy, ACTIONS
+from schemas import CVHealth, CVPrediction, ImageVisitResponse
 
 app = FastAPI(title="AgroMind API", version="0.1.0")
 
@@ -24,7 +26,7 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024
 # Computer vision
 # ---------------------------------------------------------------------------
 
-@app.get("/cv/health")
+@app.get("/cv/health", response_model=CVHealth)
 def cv_health():
     """Verify that the packaged tomato classifier can be loaded."""
     try:
@@ -33,7 +35,7 @@ def cv_health():
         raise HTTPException(status_code=503, detail=str(error)) from error
 
 
-@app.post("/cv/predict")
+@app.post("/cv/predict", response_model=CVPrediction)
 async def cv_predict(
     file: Annotated[UploadFile, File()],
     plantId: Annotated[str | None, Form()] = None,
@@ -107,35 +109,44 @@ def visit_plant(
     }
 
 
-@app.post("/farm/visit/image")
+@app.post("/farm/visit/image", response_model=ImageVisitResponse)
 async def visit_plant_with_image(
     file: Annotated[UploadFile, File()],
     row: int = Query(..., ge=0, lt=GRID_SIZE),
     col: int = Query(..., ge=0, lt=GRID_SIZE),
-    plantId: Annotated[str | None, Form()] = None,
 ):
-    """Classify a robot image, store its risk proxy, and update the route recommendation."""
+    """Classify a robot image, update belief state, and recommend the next cell."""
     image_bytes = await _read_image(file)
-    resolved_plant_id = plantId or f"plant_{row}_{col}"
+    plant_id = farm.plant_id_for(row, col)
     try:
-        cv_result = predict_image(image_bytes, resolved_plant_id)
+        cv_result = predict_image(image_bytes, plant_id)
     except ModelUnavailableError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
     already_visited = farm.observed[row][col] is not None
-    farm.record_observation(row, col, float(cv_result["severity"]))
+    prior_risk = (
+        float(farm.observed[row][col]) if already_visited else DEFAULT_PRIOR_RISK
+    )
+    belief_risk, uncertainty = update_belief(
+        severity=float(cv_result["severity"]),
+        confidence=float(cv_result["confidence"]),
+        prior_risk=prior_risk,
+    )
+    farm.record_observation(row, col, belief_risk)
     effective_grid = farm.get_effective_grid()
     values, policy = value_iteration(effective_grid)
     return {
         "visited": (row, col),
+        "plantId": plant_id,
         "cv": cv_result,
-        "score": cv_result["severity"],
-        "scoreMeaning": "simulation disease-risk proxy",
-        "already_visited": already_visited,
-        "next_recommended": _best_next(row, col, policy, values),
-        "all_done": farm.all_visited(),
+        "beliefRisk": belief_risk,
+        "uncertainty": uncertainty,
+        "priorRisk": prior_risk,
+        "alreadyVisited": already_visited,
+        "nextRecommended": _best_next(row, col, policy, values),
+        "allDone": farm.all_visited(),
     }
 
 
