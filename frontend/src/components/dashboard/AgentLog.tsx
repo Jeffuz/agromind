@@ -1,4 +1,5 @@
 import { FiAlertTriangle, FiCheck, FiCheckCircle, FiCpu, FiInfo, FiNavigation, FiZap, FiXCircle } from "react-icons/fi";
+import type { IconType } from "react-icons";
 import { Card } from "@/components/layout/Card";
 import type { AgentLogEntry } from "@/lib/types";
 
@@ -32,7 +33,7 @@ function formatMessage(message: string, kind: LogKind): { primary: string; secon
   return { primary: message };
 }
 
-const KIND_STYLES: Record<LogKind, { icon: React.ElementType; dot: string; label: string; labelColor: string; textColor: string }> = {
+const KIND_STYLES: Record<LogKind, { icon: IconType; dot: string; label: string; labelColor: string; textColor: string }> = {
   thought:      { icon: FiZap,           dot: "bg-purple-400",  label: "Fetch.ai",  labelColor: "text-purple-600", textColor: "text-purple-900" },
   move:         { icon: FiNavigation,    dot: "bg-[#4F9D5D]",   label: "Move",      labelColor: "text-[#2E7D32]",  textColor: "text-[#1F2A24]" },
   "cv-healthy": { icon: FiCheck,         dot: "bg-[#4F9D5D]",   label: "Healthy",   labelColor: "text-[#2E7D32]",  textColor: "text-[#1F2A24]" },
@@ -47,7 +48,7 @@ export function AgentLog({ entries }: AgentLogProps) {
 
   return (
     <Card
-      className="h-[280px] overflow-hidden lg:h-[320px]"
+      className="h-[200px] overflow-hidden lg:h-[240px]"
       title="Agent Log"
       subtitle="Autonomous scouting loop."
     >
@@ -56,7 +57,7 @@ export function AgentLog({ entries }: AgentLogProps) {
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-2 text-center">
               <FiCpu className="text-2xl text-[#9FC79B]" />
-              <p className="text-xs text-[#9DACA0]">Agent hasn't started yet.<br />Press Run Agent Step to begin.</p>
+              <p className="text-xs text-[#9DACA0]">Agent hasn&apos;t started yet.<br />Press Run Agent Step to begin.</p>
             </div>
           </div>
         ) : (

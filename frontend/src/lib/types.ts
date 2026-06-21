@@ -105,6 +105,5 @@ export type SimulationState = {
   selectedPlantId?: string;
   lastInspectedPlantId?: string;
   agentRunning: boolean;
-  isAutoRunning: boolean;
   agentAnalysis?: AgentAnalysis;
 };

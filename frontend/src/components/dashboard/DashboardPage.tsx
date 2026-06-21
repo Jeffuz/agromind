@@ -26,7 +26,9 @@ export function DashboardPage() {
   const agentAnalysis = useSimulationStore((simulation) => simulation.agentAnalysis);
   const showActualRiskOverlay = useSimulationStore((simulation) => simulation.showActualRiskOverlay);
   const agentRunning = useSimulationStore((simulation) => simulation.agentRunning);
+  const agentRunStatus = useSimulationStore((simulation) => simulation.agentRunStatus);
   const isAutoRunning = useSimulationStore((simulation) => simulation.isAutoRunning);
+  const autoRunSpeed = useSimulationStore((simulation) => simulation.autoRunSpeed);
   const selectedPlantId = useSimulationStore((simulation) => simulation.selectedPlantId);
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId);
 
@@ -50,12 +52,13 @@ export function DashboardPage() {
         <SimulationToolbar
           showActualRiskOverlay={showActualRiskOverlay}
           agentRunning={agentRunning}
+          agentRunStatus={agentRunStatus}
           isAutoRunning={isAutoRunning}
+          autoRunSpeed={autoRunSpeed}
           onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
-          onReset={simulationActions.resetSimulation}
-          onRunStep={simulationActions.runAgentStep}
           onStartAutoRun={simulationActions.startAutoRun}
           onStopAutoRun={simulationActions.stopAutoRun}
+          onSetAutoRunSpeed={simulationActions.setAutoRunSpeed}
         />
         <div className="relative grid min-h-0 gap-3 lg:grid-cols-2 xl:flex-1">
           <FarmMap
@@ -68,6 +71,7 @@ export function DashboardPage() {
             showActualRiskOverlay={showActualRiskOverlay}
             selectedPlantId={selectedPlantId}
             onPlantSelect={(plantId, anchor) => {
+              if (isAutoRunning) return;
               simulationActions.selectPlant(plantId);
               if (anchor) {
                 const maxX = Math.max(16, window.innerWidth - 400);

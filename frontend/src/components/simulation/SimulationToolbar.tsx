@@ -1,71 +1,51 @@
-import { FiEye, FiLoader, FiPause, FiPlay, FiRefreshCw, FiRepeat } from "react-icons/fi";
+import { FiEye, FiLoader, FiRepeat } from "react-icons/fi";
+import type { AgentRunStatus, SimulationState } from "@/lib/types";
+
+type AutoRunSpeed = SimulationState["autoRunSpeed"];
+
+const speedOptions: ReadonlyArray<{ speed: AutoRunSpeed; label: string }> = [
+  { speed: 1, label: "1x" },
+  { speed: 2, label: "2x" },
+  { speed: 4, label: "4x" },
+  // { speed: 8, label: "8x" },
+];
 
 interface SimulationToolbarProps {
   showActualRiskOverlay: boolean;
   agentRunning: boolean;
+  agentRunStatus: AgentRunStatus;
   isAutoRunning: boolean;
+  autoRunSpeed: AutoRunSpeed;
   onToggleActualRiskOverlay: () => void;
-  onReset: () => void;
-  onRunStep: () => void;
   onStartAutoRun: () => void;
   onStopAutoRun: () => void;
+  onSetAutoRunSpeed: (speed: AutoRunSpeed) => void;
 }
 
 export function SimulationToolbar({
   showActualRiskOverlay,
   agentRunning,
+  agentRunStatus,
   isAutoRunning,
+  autoRunSpeed,
   onToggleActualRiskOverlay,
-  onReset,
-  onRunStep,
   onStartAutoRun,
   onStopAutoRun,
+  onSetAutoRunSpeed,
 }: SimulationToolbarProps) {
   return (
     <section aria-label="Simulation controls" className="flex shrink-0 flex-col gap-3 rounded-xl border border-[#DDE5D8] bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={onRunStep}
-          disabled={agentRunning || isAutoRunning}
-          className="flex items-center gap-2 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-4 py-2 text-xs font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {agentRunning ? <FiLoader aria-hidden="true" className="animate-spin" /> : <FiPlay aria-hidden="true" />}
-          {agentRunning ? "Running…" : "Run Agent Step"}
-        </button>
-
-        <button
-          type="button"
           onClick={isAutoRunning ? onStopAutoRun : onStartAutoRun}
           disabled={agentRunning && !isAutoRunning}
-          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-60 ${
-            isAutoRunning
-              ? "border-[#2E7D32] bg-[#2E7D32] text-white hover:bg-[#256629]"
-              : "border-[#BFD6BA] bg-[#EAF5EA] text-[#2E7D32]"
-          }`}
+          className="flex h-9 items-center gap-2 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-4 text-xs font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <FiRepeat aria-hidden="true" />
-          {isAutoRunning ? "Stop Auto" : "Auto Run"}
+          {agentRunning ? <FiLoader aria-hidden="true" className="animate-spin" /> : <FiRepeat aria-hidden="true" />}
+          {agentRunStatus === "complete" ? "Scouting complete" : isAutoRunning ? "Stop Auto Run" : "Auto Run"}
         </button>
 
-        <button
-          type="button"
-          onClick={onStopAutoRun}
-          disabled={!isAutoRunning}
-          className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#39463E] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <FiPause aria-hidden="true" />
-          Pause
-        </button>
-
-        <button
-          type="button"
-          onClick={onReset}
-          className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#667065]"
-        >
-          <FiRefreshCw aria-hidden="true" />
-          Reset
-        </button>
         <div className="flex items-center gap-1 rounded-lg border border-[#DDE5D8] bg-[#F8FAF5] p-1">
           {speedOptions.map((option) => (
             <button

@@ -13,13 +13,13 @@ const riskItems = [
 export function MapLegend({ variant = "real" }: MapLegendProps) {
   const items = variant === "belief"
     ? [
-        { label: "Unknown", color: "bg-[#E4E8E1]" },
+        // { label: "Unknown", color: "bg-[#E4E8E1]" },
         { label: "Inspected", color: "bg-[#D5E8D8]" },
         { label: "Low belief pressure", color: "bg-green-200" },
         { label: "Medium belief pressure", color: "bg-yellow-300" },
         { label: "High belief pressure", color: "bg-orange-300" },
         { label: "Very high belief pressure", color: "bg-red-400" },
-        { label: "Current target", color: "border-2 border-amber-600 bg-white" },
+        // { label: "Current target", color: "border-2 border-amber-600 bg-white" },
       ]
     : [
         // { label: "Crop tile", color: "border border-[#968E73] bg-[#AFA486] shadow-inner" },

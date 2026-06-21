@@ -15,51 +15,6 @@ export const defaultEnvironment: EnvironmentParams = {
   soilMoisture: 28,
 };
 
-let autoRunTimer: number | undefined;
-const autoRunDelays = {
-  idle: 200,
-  moving: 125,
-  processing: 850,
-} as const;
-
-function clearAutoRunTimer() {
-  if (autoRunTimer !== undefined) {
-    window.clearTimeout(autoRunTimer);
-    autoRunTimer = undefined;
-  }
-}
-
-function getAutoRunDelay(baseDelay: number, speed: 1 | 2 | 4 | 8) {
-  return Math.max(35, Math.round(baseDelay / speed));
-}
-
-function scheduleAutoRunTick(delay: number) {
-  clearAutoRunTimer();
-  autoRunTimer = window.setTimeout(() => {
-    const current = useSimulationStore.getState();
-    if (!current.isAutoRunning) return;
-
-    if (current.agentRunStatus === "idle") {
-      current.runAgentStep();
-      return;
-    }
-
-    if (current.agentRunStatus === "moving") {
-      current.advanceRobotAlongPath();
-      return;
-    }
-
-    if (current.agentRunStatus === "processing") {
-      current.completeAgentInspection();
-      return;
-    }
-
-    if (current.agentRunStatus === "complete") {
-      current.stopAutoRun();
-    }
-  }, delay);
-}
-
 const createInitialState = (): SimulationState => ({
   phase: "config",
   tick: 0,
@@ -80,7 +35,6 @@ const createInitialState = (): SimulationState => ({
   metrics: calculateSimulationMetrics([]),
   agentLogs: [],
   agentRunning: false,
-  isAutoRunning: false,
   agentAnalysis: undefined,
   selectedPlantId: undefined,
   lastInspectedPlantId: undefined,
@@ -110,6 +64,18 @@ type SimulationStore = SimulationState & SimulationActions;
 let _autoRunInterval: ReturnType<typeof setInterval> | null = null;
 let _analyzeInFlight = false;
 
+function beginAutoRunInterval(speed: 1 | 2 | 4 | 8) {
+  if (_autoRunInterval) clearInterval(_autoRunInterval);
+  _autoRunInterval = setInterval(() => {
+    const state = useSimulationStore.getState();
+    if (state.plants.every((plant) => plant.inspected)) {
+      state.stopAutoRun();
+      return;
+    }
+    if (!state.agentRunning) void state.runAgentStep();
+  }, Math.max(75, Math.round(600 / speed)));
+}
+
 export const useSimulationStore = create<SimulationStore>((set, get) => ({
   ...createInitialState(),
 
@@ -121,7 +87,6 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   generateSimulation: () => {
     const current = get();
     const { plants, robots } = generateGreenhouse(current);
-    clearAutoRunTimer();
     set({
       phase: "dashboard",
       tick: 0,
@@ -129,6 +94,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       robots,
       showActualRiskOverlay: false,
       agentRunning: false,
+      agentRunStatus: "idle",
       isAutoRunning: false,
       agentAnalysis: undefined,
       metrics: calculateSimulationMetrics(plants),
@@ -152,6 +118,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   toggleActualRiskOverlay: () => set((current) => ({
     showActualRiskOverlay: !current.showActualRiskOverlay,
   })),
+
+  setAutoRunSpeed: (autoRunSpeed) => {
+    set({ autoRunSpeed });
+    if (get().isAutoRunning) beginAutoRunInterval(autoRunSpeed);
+  },
 
   resetSimulation: () => {
     if (_autoRunInterval) {
@@ -235,6 +206,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       get().stopAutoRun();
       const doneTick = tick;
       set({
+        agentRunStatus: "complete",
         agentLogs: [
           ...get().agentLogs,
           { id: `done-${doneTick}`, tick: doneTick, message: "All plants inspected. Requesting Fetch.ai farm analysis…" },
@@ -245,7 +217,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       return;
     }
 
-    set({ agentRunning: true });
+    set({ agentRunning: true, agentRunStatus: "processing" });
 
     // Build lookup map for O(1) access
     const plantMap = new Map(plants.map((p) => [`${p.row}-${p.col}`, p]));
@@ -272,7 +244,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       };
 
       const targetPlant = plantMap.get(`${next_row}-${next_col}`);
-      if (!targetPlant) { set({ agentRunning: false }); return; }
+      if (!targetPlant) { set({ agentRunning: false, agentRunStatus: "idle" }); return; }
 
       const { prediction, confidence } = mockClassifyPlantImage(targetPlant);
       const priorRisk = targetPlant.inspected ? targetPlant.beliefRisk : 0.3;
@@ -305,9 +277,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           ...newLogs,
           ...(allDone ? [{ id: `done-${nextTick}`, tick: nextTick, message: "All plants inspected. Requesting Fetch.ai farm analysis…" }] : []),
         ],
-        selectedPlantId: targetPlant.id,
         lastInspectedPlantId: targetPlant.id,
         agentRunning: false,
+        agentRunStatus: allDone ? "complete" : "idle",
         recommendation: allDone
           ? { title: "Fetch.ai agent analysing…", body: "Please wait while the agent reasons over the full farm scan." }
           : prediction === "healthy"
@@ -324,6 +296,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       const message = err instanceof Error ? err.message : "Unknown error";
       set({
         agentRunning: false,
+        agentRunStatus: "idle",
         agentLogs: [
           ...get().agentLogs,
           { id: `error-${Date.now()}`, tick: get().tick, message: `Agent step failed: ${message}` },
@@ -334,15 +307,14 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
   startAutoRun: () => {
     if (_autoRunInterval) return;
+    const current = get();
+    if (current.plants.length === 0 || current.plants.every((plant) => plant.inspected)) {
+      set({ isAutoRunning: false, agentRunStatus: current.plants.length === 0 ? "idle" : "complete" });
+      return;
+    }
     set({ isAutoRunning: true });
-    _autoRunInterval = setInterval(() => {
-      const state = useSimulationStore.getState();
-      if (!state.agentRunning && !state.plants.every((p) => p.inspected)) {
-        state.runAgentStep();
-      } else if (state.plants.every((p) => p.inspected)) {
-        useSimulationStore.getState().stopAutoRun();
-      }
-    }, 600);
+    void get().runAgentStep();
+    beginAutoRunInterval(current.autoRunSpeed);
   },
 
   stopAutoRun: () => {
