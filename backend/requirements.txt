@@ -1,6 +1,10 @@
 fastapi
 uvicorn[standard]
 numpy
+openai
+python-dotenv
 tensorflow>=2.18,<2.22
 pillow>=10,<13
 python-multipart>=0.0.9,<1
+httpx>=0.27,<1
+uagents>=0.13,<1

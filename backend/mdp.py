@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Tuple
 
-GRID_SIZE = 10
 GAMMA = 0.9      # discount factor
 THETA = 1e-8     # convergence threshold
 
@@ -13,36 +12,37 @@ ACTIONS: dict[str, tuple[int, int]] = {
 }
 
 
-def _next_state(r: int, c: int, dr: int, dc: int) -> tuple[int, int]:
+def _next_state(r: int, c: int, dr: int, dc: int, rows: int, cols: int) -> tuple[int, int]:
     nr, nc = r + dr, c + dc
-    if 0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE:
+    if 0 <= nr < rows and 0 <= nc < cols:
         return nr, nc
     return r, c  # wall: stay in place
 
 
 def value_iteration(grid: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Solve the farm MDP via value iteration.
+    Solve the farm MDP via value iteration for any grid size.
 
     Reward design: R(s, a) = infection_level of the cell the robot lands on.
     High-infection cells attract the robot; the policy drives it toward disease clusters.
 
     Returns
     -------
-    V      : (10, 10) float array — state value function
-    policy : (10, 10) str array  — optimal action at each cell
+    V      : (rows, cols) float array — state value function
+    policy : (rows, cols) str array  — optimal action at each cell
     """
-    V = np.zeros((GRID_SIZE, GRID_SIZE))
+    rows, cols = grid.shape
+    V = np.zeros((rows, cols))
 
     while True:
         delta = 0.0
         new_V = np.zeros_like(V)
 
-        for r in range(GRID_SIZE):
-            for c in range(GRID_SIZE):
+        for r in range(rows):
+            for c in range(cols):
                 q_values = {}
                 for action, (dr, dc) in ACTIONS.items():
-                    nr, nc = _next_state(r, c, dr, dc)
+                    nr, nc = _next_state(r, c, dr, dc, rows, cols)
                     reward = float(grid[nr][nc])
                     q_values[action] = reward + GAMMA * V[nr][nc]
 
@@ -54,14 +54,15 @@ def value_iteration(grid: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if delta < THETA:
             break
 
-    # Derive greedy policy from converged V
-    policy = np.empty((GRID_SIZE, GRID_SIZE), dtype=object)
-    for r in range(GRID_SIZE):
-        for c in range(GRID_SIZE):
+    policy = np.empty((rows, cols), dtype=object)
+    for r in range(rows):
+        for c in range(cols):
             best_action = max(
                 ACTIONS,
-                key=lambda a: float(grid[_next_state(r, c, *ACTIONS[a])[0]][_next_state(r, c, *ACTIONS[a])[1]])
-                              + GAMMA * V[_next_state(r, c, *ACTIONS[a])[0]][_next_state(r, c, *ACTIONS[a])[1]],
+                key=lambda a, r=r, c=c: (
+                    float(grid[_next_state(r, c, *ACTIONS[a], rows, cols)[0]][_next_state(r, c, *ACTIONS[a], rows, cols)[1]])
+                    + GAMMA * V[_next_state(r, c, *ACTIONS[a], rows, cols)[0]][_next_state(r, c, *ACTIONS[a], rows, cols)[1]]
+                ),
             )
             policy[r][c] = best_action
 
@@ -75,10 +76,8 @@ def follow_policy(
     start_col: int,
     max_steps: int = 60,
 ) -> dict:
-    """
-    Simulate the robot following the greedy policy from a start cell.
-    Stops on cycle detection or boundary oscillation.
-    """
+    """Simulate the robot following the greedy policy from a start cell."""
+    rows, cols = grid.shape
     path: list[tuple[int, int]] = [(start_row, start_col)]
     visited: set[tuple[int, int]] = {(start_row, start_col)}
     r, c = start_row, start_col
@@ -86,7 +85,7 @@ def follow_policy(
     for _ in range(max_steps):
         action: str = policy[r][c]
         dr, dc = ACTIONS[action]
-        nr, nc = _next_state(r, c, dr, dc)
+        nr, nc = _next_state(r, c, dr, dc, rows, cols)
 
         if (nr, nc) in visited:
             break

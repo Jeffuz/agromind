@@ -23,10 +23,10 @@ export function DashboardPage() {
   const environment = useSimulationStore((simulation) => simulation.environment);
   const agentLogs = useSimulationStore((simulation) => simulation.agentLogs);
   const recommendation = useSimulationStore((simulation) => simulation.recommendation);
+  const agentAnalysis = useSimulationStore((simulation) => simulation.agentAnalysis);
   const showActualRiskOverlay = useSimulationStore((simulation) => simulation.showActualRiskOverlay);
-  const agentRunStatus = useSimulationStore((simulation) => simulation.agentRunStatus);
+  const agentRunning = useSimulationStore((simulation) => simulation.agentRunning);
   const isAutoRunning = useSimulationStore((simulation) => simulation.isAutoRunning);
-  const autoRunSpeed = useSimulationStore((simulation) => simulation.autoRunSpeed);
   const selectedPlantId = useSimulationStore((simulation) => simulation.selectedPlantId);
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId);
 
@@ -49,12 +49,13 @@ export function DashboardPage() {
       <main className="relative mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 px-5 py-3 sm:px-8 lg:px-10">
         <SimulationToolbar
           showActualRiskOverlay={showActualRiskOverlay}
-          onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
-          onToggleAutoRun={simulationActions.toggleAutoRun}
-          onSetAutoRunSpeed={simulationActions.setAutoRunSpeed}
-          agentRunStatus={agentRunStatus}
+          agentRunning={agentRunning}
           isAutoRunning={isAutoRunning}
-          autoRunSpeed={autoRunSpeed}
+          onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
+          onReset={simulationActions.resetSimulation}
+          onRunStep={simulationActions.runAgentStep}
+          onStartAutoRun={simulationActions.startAutoRun}
+          onStopAutoRun={simulationActions.stopAutoRun}
         />
         <div className="relative grid min-h-0 gap-3 lg:grid-cols-2 xl:flex-1">
           <FarmMap
@@ -126,7 +127,7 @@ export function DashboardPage() {
           <MetricsPanel metrics={metrics} />
           <SensorDataPanel environment={environment} />
           <AgentLog entries={agentLogs} />
-          <RecommendationPanel recommendation={recommendation} />
+          <RecommendationPanel recommendation={recommendation} agentAnalysis={agentAnalysis} />
         </div>
       </main>
     </div>

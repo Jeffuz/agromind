@@ -72,6 +72,16 @@ export type ScenarioPreset = {
   environment: EnvironmentParams;
 };
 
+export type AgentAnalysis = {
+  overview: string;
+  high_risk_areas: string;
+  healthy_areas: string;
+  unvisited_areas: string;
+  recommendations: string;
+  reasoning?: string;
+  agent_address?: string;
+};
+
 export type SimulationState = {
   phase: "config" | "dashboard";
   tick: number;
@@ -94,4 +104,7 @@ export type SimulationState = {
   recommendation?: Recommendation;
   selectedPlantId?: string;
   lastInspectedPlantId?: string;
+  agentRunning: boolean;
+  isAutoRunning: boolean;
+  agentAnalysis?: AgentAnalysis;
 };
