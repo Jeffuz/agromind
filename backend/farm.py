@@ -41,6 +41,13 @@ def visit_plant(row: int, col: int) -> float:
     return score
 
 
+def record_observation(row: int, col: int, score: float) -> None:
+    """Store a real CV risk score for a plant visited by the robot."""
+    if not 0.0 <= score <= 1.0:
+        raise ValueError("Observation score must be between 0 and 1.")
+    observed[row][col] = float(score)
+
+
 def get_effective_grid(default_unvisited: float = 0.3) -> np.ndarray:
     """
     Build the grid the MDP reasons over.
