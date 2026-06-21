@@ -13,6 +13,13 @@ export type DiseaseLabel =
 
 export type BeliefLabel = "unknown" | DiseaseLabel;
 
+export type GridPosition = {
+  row: number;
+  col: number;
+};
+
+export type AgentRunStatus = "idle" | "planning" | "moving" | "processing" | "complete";
+
 export type Plant = {
   id: string;
   row: number;
@@ -85,6 +92,13 @@ export type SimulationState = {
   plants: Plant[];
   robots: Robot[];
   showActualRiskOverlay: boolean;
+  agentRunStatus: AgentRunStatus;
+  isAutoRunning: boolean;
+  autoRunSpeed: 1 | 2 | 4 | 8;
+  activeRobotId?: string;
+  activeTargetPlantId?: string;
+  activePath: GridPosition[];
+  activePathIndex: number;
   metrics: Metrics;
   agentLogs: AgentLogEntry[];
   recommendation?: Recommendation;

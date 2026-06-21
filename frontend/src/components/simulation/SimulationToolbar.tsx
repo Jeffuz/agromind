@@ -66,6 +66,23 @@ export function SimulationToolbar({
           <FiRefreshCw aria-hidden="true" />
           Reset
         </button>
+        <div className="flex items-center gap-1 rounded-lg border border-[#DDE5D8] bg-[#F8FAF5] p-1">
+          {speedOptions.map((option) => (
+            <button
+              key={option.speed}
+              type="button"
+              onClick={() => onSetAutoRunSpeed(option.speed)}
+              aria-pressed={autoRunSpeed === option.speed}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                autoRunSpeed === option.speed
+                  ? "bg-[#2E7D32] text-white"
+                  : "text-[#526055] hover:bg-white"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <button

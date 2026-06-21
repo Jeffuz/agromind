@@ -36,7 +36,7 @@ export function DashboardPage() {
         <section className="w-full max-w-md rounded-xl border border-[#DDE5D8] bg-white p-8 text-center shadow-sm">
           <h1 className="text-xl font-semibold text-[#1F2A24]">No greenhouse generated yet.</h1>
           <p className="mt-2 text-sm text-[#667065]">Configure the growing conditions before opening the simulation workspace.</p>
-          <Link href="/" className="mt-5 inline-flex rounded-lg bg-[#2E7D32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#256629]">
+          <Link href="/config" className="mt-5 inline-flex rounded-lg bg-[#2E7D32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#256629]">
             Go to configuration
           </Link>
         </section>
@@ -115,7 +115,8 @@ export function DashboardPage() {
                     plant={selectedPlant}
                     showActualRiskOverlay={showActualRiskOverlay}
                     onInspect={simulationActions.inspectSelectedPlant}
-                    canInspect={Boolean(selectedPlant.imageUrl)}
+                    canInspect={Boolean(selectedPlant.imageUrl) && !isAutoRunning && agentRunStatus === "idle"}
+                    agentRunStatus={agentRunStatus}
                   />
                 </div>
               </div>

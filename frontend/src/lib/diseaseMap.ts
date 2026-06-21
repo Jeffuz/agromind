@@ -90,9 +90,9 @@ export function generateGreenhouse({ rows, cols, robotCount, environment }: Gree
         col,
         trueLabel,
         imageUrl: getTomatoImageForPlant(trueLabel, row, col),
-        beliefLabel: "unknown",
+        beliefLabel: "healthy",
         actualRisk,
-        beliefRisk: 0,
+        beliefRisk: 0.15,
         inspected: false,
         isCurrentTarget: false,
       });

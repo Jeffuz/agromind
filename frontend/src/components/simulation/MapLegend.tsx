@@ -10,7 +10,7 @@ const riskItems = [
   { label: "Very high disease pressure", color: "bg-[#D98A77]" },
 ];
 
-export function MapLegend({ variant = "real", showActualRiskOverlay = false }: MapLegendProps) {
+export function MapLegend({ variant = "real" }: MapLegendProps) {
   const items = variant === "belief"
     ? [
         { label: "Unknown", color: "bg-[#E4E8E1]" },

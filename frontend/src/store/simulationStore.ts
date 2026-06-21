@@ -15,6 +15,51 @@ export const defaultEnvironment: EnvironmentParams = {
   soilMoisture: 28,
 };
 
+let autoRunTimer: number | undefined;
+const autoRunDelays = {
+  idle: 200,
+  moving: 125,
+  processing: 850,
+} as const;
+
+function clearAutoRunTimer() {
+  if (autoRunTimer !== undefined) {
+    window.clearTimeout(autoRunTimer);
+    autoRunTimer = undefined;
+  }
+}
+
+function getAutoRunDelay(baseDelay: number, speed: 1 | 2 | 4 | 8) {
+  return Math.max(35, Math.round(baseDelay / speed));
+}
+
+function scheduleAutoRunTick(delay: number) {
+  clearAutoRunTimer();
+  autoRunTimer = window.setTimeout(() => {
+    const current = useSimulationStore.getState();
+    if (!current.isAutoRunning) return;
+
+    if (current.agentRunStatus === "idle") {
+      current.runAgentStep();
+      return;
+    }
+
+    if (current.agentRunStatus === "moving") {
+      current.advanceRobotAlongPath();
+      return;
+    }
+
+    if (current.agentRunStatus === "processing") {
+      current.completeAgentInspection();
+      return;
+    }
+
+    if (current.agentRunStatus === "complete") {
+      current.stopAutoRun();
+    }
+  }, delay);
+}
+
 const createInitialState = (): SimulationState => ({
   phase: "config",
   tick: 0,
@@ -25,6 +70,13 @@ const createInitialState = (): SimulationState => ({
   plants: [],
   robots: [],
   showActualRiskOverlay: false,
+  agentRunStatus: "idle",
+  isAutoRunning: false,
+  autoRunSpeed: 1,
+  activeRobotId: undefined,
+  activeTargetPlantId: undefined,
+  activePath: [],
+  activePathIndex: 0,
   metrics: calculateSimulationMetrics([]),
   agentLogs: [],
   agentRunning: false,
@@ -41,6 +93,7 @@ interface SimulationActions {
   applyScenario: (scenario: ScenarioPreset) => void;
   generateSimulation: () => void;
   toggleActualRiskOverlay: () => void;
+  setAutoRunSpeed: (autoRunSpeed: 1 | 2 | 4 | 8) => void;
   resetSimulation: () => void;
   selectPlant: (plantId: string) => void;
   clearSelectedPlant: () => void;
@@ -68,6 +121,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   generateSimulation: () => {
     const current = get();
     const { plants, robots } = generateGreenhouse(current);
+    clearAutoRunTimer();
     set({
       phase: "dashboard",
       tick: 0,
@@ -377,6 +431,7 @@ export const simulationActions = {
   applyScenario: (scenario: ScenarioPreset) => useSimulationStore.getState().applyScenario(scenario),
   generateSimulation: () => useSimulationStore.getState().generateSimulation(),
   toggleActualRiskOverlay: () => useSimulationStore.getState().toggleActualRiskOverlay(),
+  setAutoRunSpeed: (autoRunSpeed: 1 | 2 | 4 | 8) => useSimulationStore.getState().setAutoRunSpeed(autoRunSpeed),
   resetSimulation: () => useSimulationStore.getState().resetSimulation(),
   selectPlant: (plantId: string) => useSimulationStore.getState().selectPlant(plantId),
   clearSelectedPlant: () => useSimulationStore.getState().clearSelectedPlant(),

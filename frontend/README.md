@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## AgroMind app flow
+
+- `/` is the landing page and entry point.
+- `/config` is the simulation configuration screen.
+- `/dashboard` is the autonomous scouting simulation.
+
+The home page introduces the product, the config page seeds the hidden scenario, and the dashboard runs the robot scouting loop.
+
 ## Getting Started
 
 First, run the development server:
