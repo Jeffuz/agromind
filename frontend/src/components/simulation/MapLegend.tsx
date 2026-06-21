@@ -18,6 +18,7 @@ export function MapLegend({ variant = "real" }: MapLegendProps) {
         { label: "Low belief pressure", color: "bg-green-200" },
         { label: "Medium belief pressure", color: "bg-yellow-300" },
         { label: "High belief pressure", color: "bg-orange-300" },
+        { label: "Very high belief pressure", color: "bg-red-400" },
         { label: "Current target", color: "border-2 border-amber-600 bg-white" },
       ]
     : [

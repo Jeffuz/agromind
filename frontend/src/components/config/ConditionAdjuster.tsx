@@ -2,9 +2,7 @@
 
 import { Card } from "@/components/layout/Card";
 import type { EnvironmentParams } from "@/lib/types";
-import { 
-  // defaultEnvironment, 
-  simulationActions, useSimulationStore } from "@/store/simulationStore";
+import { simulationActions, useSimulationStore } from "@/store/simulationStore";
 
 const conditions: Array<{
   key: keyof EnvironmentParams;
@@ -29,21 +27,16 @@ export function ConditionAdjuster() {
   }
 
   return (
-    <Card
-      className="h-full overflow-hidden"
-      title="Environment Conditions"
-      subtitle="These values seed hidden disease pressure before scouting begins."
-      // action={
-      //   <button type="button" onClick={() => simulationActions.setEnvironment({ ...defaultEnvironment })} className="shrink-0 text-xs font-medium text-[#2E7D32]">
-      //     Reset to Defaults
-      //   </button>
-      // }
-    >
+    <Card className="h-full overflow-hidden" title="Environment Conditions" subtitle="These values seed hidden disease pressure before scouting begins.">
       <div className="divide-y divide-[#E3E7DD]">
         {conditions.map((condition) => {
           const value = environment[condition.key];
+
           return (
-            <label key={condition.key} className="grid grid-cols-[minmax(105px,0.8fr)_minmax(120px,1.2fr)_80px] items-center gap-4 py-2.5 first:pt-0 last:pb-0">
+            <label
+              key={condition.key}
+              className="grid grid-cols-[minmax(105px,0.8fr)_minmax(120px,1.2fr)_80px] items-center gap-4 rounded-lg px-2 py-2.5 transition-colors hover:bg-[#FBFCF8] first:pt-2.5 last:pb-2.5"
+            >
               <span>
                 <span className="block text-xs font-medium text-[#1F2A24]">{condition.name}</span>
                 <span className="mt-0.5 block text-[11px] text-[#758074]">{condition.description}</span>
@@ -55,10 +48,16 @@ export function ConditionAdjuster() {
                 step={condition.step}
                 value={value}
                 onChange={(event) => setCondition(condition.key, Number(event.target.value))}
-                className="h-1.5 w-full cursor-pointer accent-[#2E7D32]"
+                className="h-1.5 w-full cursor-pointer accent-[#2E7D32] focus:outline-none focus:ring-2 focus:ring-[#BFD6BA]"
               />
-              <span className="text-right text-xs font-semibold tabular-nums text-[#1F2A24]">
-                {condition.format(value)}
+              <span className="text-right">
+                <span className="block text-xs font-semibold tabular-nums text-[#1F2A24]">{condition.format(value)}</span>
+                <span className="mt-0.5 block text-[10px] leading-none text-[#758074]">
+                  {condition.key === "humidity" && (value >= 80 ? "High" : value >= 60 ? "Moderate" : "Low")}
+                  {condition.key === "temperature" && (value > 27 ? "Warm" : value >= 18 ? "Mild" : "Cool")}
+                  {condition.key === "light" && (value < 350 ? "Low" : value < 600 ? "Moderate" : "Bright")}
+                  {condition.key === "soilMoisture" && (value >= 75 ? "Wet" : value >= 45 ? "Balanced" : "Dry")}
+                </span>
               </span>
             </label>
           );

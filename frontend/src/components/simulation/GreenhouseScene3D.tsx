@@ -119,10 +119,10 @@ function getBedSize(rows: number, cols: number) {
 }
 
 function getHeatmapColor(risk: number) {
-  if (risk < 0.28) return [99, 181, 109];
-  if (risk < 0.5) return [228, 201, 88];
-  if (risk < 0.72) return [236, 152, 70];
-  return [218, 84, 68];
+  if (risk < 0.4) return [171, 190, 91];
+  if (risk < 0.55) return [241, 194, 50];
+  if (risk < 0.68) return [235, 126, 40];
+  return [210, 58, 50];
 }
 
 function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProps, "plants" | "rows" | "cols">) {
@@ -144,44 +144,52 @@ function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProp
     const { width, depth } = getBedSize(rows, cols);
     const halfWidth = width / 2;
     const halfDepth = depth / 2;
-    const inspectedPlants = plants.filter((plant) => plant.inspected && plant.beliefLabel !== "unknown");
+    const inspectedDiseasedPlants = plants
+      .filter(
+        (plant) =>
+          plant.inspected &&
+          plant.beliefLabel !== "unknown" &&
+          plant.cvPrediction !== "healthy" &&
+          plant.beliefRisk >= 0.25,
+      )
+      .sort((firstPlant, secondPlant) => firstPlant.beliefRisk - secondPlant.beliefRisk);
 
     context.clearRect(0, 0, heatmap.canvas.width, heatmap.canvas.height);
     context.globalCompositeOperation = "source-over";
 
-    if (inspectedPlants.length > 0) {
-      inspectedPlants.forEach((plant) => {
+    if (inspectedDiseasedPlants.length > 0) {
+      inspectedDiseasedPlants.forEach((plant) => {
         const [x, z] = getGridPosition(plant.row, plant.col, rows, cols);
         const normalizedX = (x + halfWidth) / width;
-        const normalizedY = 1 - ((z + halfDepth) / depth);
+        const normalizedY = (z + halfDepth) / depth;
         const centerX = normalizedX * heatmap.canvas.width;
         const centerY = normalizedY * heatmap.canvas.height;
         const risk = Math.max(0, Math.min(1, plant.beliefRisk));
-        const intensity = Math.max(0, (risk - 0.18) / 0.82);
-        const [red, green, blue] = getHeatmapColor(plant.beliefRisk);
-        if (intensity <= 0.02) return;
+        const intensity = Math.min(1, Math.max(0, (risk - 0.25) / 0.55));
+        const [red, green, blue] = getHeatmapColor(risk);
 
-        const coreAlpha = 0.03 + intensity * 0.28;
-        const haloAlpha = 0.01 + intensity * 0.12;
-        const radius = Math.max(heatmap.canvas.width, heatmap.canvas.height) * (0.035 + intensity * 0.075);
-        const haloRadius = radius * 2.4;
+        const canvasSize = Math.max(heatmap.canvas.width, heatmap.canvas.height);
+        const coreRadius = canvasSize * (0.018 + intensity * 0.035);
+        const haloRadius = canvasSize * (0.045 + intensity * 0.075);
+        const coreAlpha = 0.18 + intensity * 0.32;
+        const haloAlpha = 0.06 + intensity * 0.16;
 
-        const halo = context.createRadialGradient(centerX, centerY, radius * 0.25, centerX, centerY, haloRadius);
+        const halo = context.createRadialGradient(centerX, centerY, coreRadius * 0.6, centerX, centerY, haloRadius);
         halo.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${haloAlpha})`);
-        halo.addColorStop(0.55, `rgba(${red}, ${green}, ${blue}, ${Math.max(haloAlpha * 0.4, 0.012)})`);
+        halo.addColorStop(0.55, `rgba(${red}, ${green}, ${blue}, ${haloAlpha * 0.4})`);
         halo.addColorStop(1, "rgba(0, 0, 0, 0)");
         context.fillStyle = halo;
         context.beginPath();
         context.arc(centerX, centerY, haloRadius, 0, Math.PI * 2);
         context.fill();
 
-        const core = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+        const core = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, coreRadius);
         core.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${coreAlpha})`);
-        core.addColorStop(0.65, `rgba(${red}, ${green}, ${blue}, ${Math.max(coreAlpha * 0.45, 0.015)})`);
+        core.addColorStop(0.6, `rgba(${red}, ${green}, ${blue}, ${coreAlpha * 0.42})`);
         core.addColorStop(1, "rgba(0, 0, 0, 0)");
         context.fillStyle = core;
         context.beginPath();
-        context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        context.arc(centerX, centerY, coreRadius, 0, Math.PI * 2);
         context.fill();
       });
     }
@@ -193,14 +201,14 @@ function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProp
   const { width, depth } = getBedSize(rows, cols);
 
   return (
-    <mesh position={[0, 0.061, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+    <mesh position={[0, 0.061, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[width, depth]} />
       <meshBasicMaterial
         map={heatmap.texture}
         transparent
-        opacity={0.88}
+        opacity={0.9}
         depthWrite={false}
-        depthTest={false}
+        depthTest
         side={DoubleSide}
         toneMapped={false}
       />
@@ -303,10 +311,8 @@ function InstancedPlants({
       dummy.updateMatrix();
       shadows.setMatrixAt(index, dummy.matrix);
 
-      const showOverlay = mode === "real"
-        ? showActualRiskOverlay
-        : plant.inspected && plant.beliefLabel !== "unknown";
-      const risk = mode === "real" ? plant.actualRisk : plant.beliefRisk;
+      const showOverlay = mode === "real" && showActualRiskOverlay;
+      const risk = mode === "real" ? plant.actualRisk : 0;
       dummy.position.set(x, 0.055, z);
       dummy.rotation.set(-Math.PI / 2, 0, 0);
       dummy.scale.setScalar(showOverlay ? 1 : 0);

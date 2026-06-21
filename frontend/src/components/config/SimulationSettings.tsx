@@ -18,7 +18,7 @@ export function SimulationSettings() {
               const [nextRows, nextCols] = event.target.value.split("x").map(Number);
               simulationActions.setRowsCols(nextRows, nextCols);
             }}
-            className="w-full rounded-xl border border-[#DDE5D8] bg-[#FCFCF8] px-3 py-2 text-xs font-medium text-[#1F2A24]"
+            className="w-full rounded-xl border border-[#DDE5D8] bg-[#FCFCF8] px-3 py-2 text-xs font-medium text-[#1F2A24] shadow-sm transition-colors hover:bg-white focus:border-[#8FBC89] focus:outline-none focus:ring-2 focus:ring-[#BFD6BA]"
           >
             <option value="10x20">10 × 20</option>
             <option value="20x40">20 × 40</option>
@@ -28,7 +28,7 @@ export function SimulationSettings() {
         </label>
         <label>
           <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-[#667065]">Robot Count</span>
-          <div className="w-full rounded-xl border border-[#DDE5D8] bg-[#F3F5EF] px-3 py-2 text-xs font-medium text-[#1F2A24]">
+          <div className="w-full rounded-xl border border-[#DDE5D8] bg-[#F3F5EF] px-3 py-2 text-xs font-medium text-[#1F2A24] shadow-sm">
             1 robot
           </div>
         </label>

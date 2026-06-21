@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { FiArrowRight } from "react-icons/fi";
 import { FarmMap } from "@/components/simulation/FarmMap";
 import { generateGreenhouse } from "@/lib/diseaseMap";
 import { simulationActions, useSimulationStore } from "@/store/simulationStore";
@@ -33,8 +34,13 @@ export function ConfigurationPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-[#1F2A24] sm:text-3xl">
             Configure Greenhouse Simulation
           </h1>
-          <button type="button" onClick={generateSimulation} className="shrink-0 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#256629]">
+          <button
+            type="button"
+            onClick={generateSimulation}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#2E7D32] bg-[#2E7D32] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#256629] focus:outline-none focus:ring-2 focus:ring-[#BFD6BA]"
+          >
             Generate Greenhouse
+            <FiArrowRight aria-hidden="true" />
           </button>
         </div>
 
