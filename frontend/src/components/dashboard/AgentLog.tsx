@@ -7,7 +7,7 @@ interface AgentLogProps {
 
 export function AgentLog({ entries }: AgentLogProps) {
   return (
-    <Card className="h-[280px] overflow-hidden lg:h-[320px]" title="Agent Log" subtitle="Autonomous scouting loop.">
+    <Card className="h-[200px] overflow-hidden lg:h-[240px]" title="Agent Log" subtitle="Autonomous scouting loop.">
       <div className="h-[200px] overflow-y-auto pr-1 sm:h-[220px] lg:h-[250px]">
         <ol className="space-y-1.5">
           {[...entries].reverse().map((entry) => (
