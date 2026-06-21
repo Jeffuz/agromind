@@ -13,9 +13,9 @@ export function MetricsPanel() {
     <Card className="h-full overflow-hidden" title="Scouting Progress" subtitle="Current inspection efficiency.">
       <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
         {metrics.map((metric) => (
-          <div key={metric.label} className="border-l border-emerald-900 pl-2.5 last:col-span-2">
-            <dt className="text-[10px] leading-3 text-slate-500">{metric.label}</dt>
-            <dd className="mt-0.5 text-base font-semibold tabular-nums text-slate-100">{metric.value}</dd>
+          <div key={metric.label} className="border-l border-[#BFD6BA] pl-2.5 last:col-span-2">
+            <dt className="text-[10px] leading-3 text-[#758074]">{metric.label}</dt>
+            <dd className="mt-0.5 text-base font-semibold tabular-nums text-[#1F2A24]">{metric.value}</dd>
           </div>
         ))}
       </dl>

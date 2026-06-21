@@ -8,7 +8,7 @@ import { SensorDataPanel } from "./SensorDataPanel";
 
 export function DashboardPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#050c0d] text-slate-100 xl:h-screen xl:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-[#F5F7EF] text-[#1F2A24] xl:h-screen xl:overflow-hidden">
       <main className="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 px-5 py-3 sm:px-8 lg:px-10">
         <SimulationToolbar />
 

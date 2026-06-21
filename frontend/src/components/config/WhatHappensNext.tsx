@@ -11,10 +11,10 @@ export function WhatHappensNext() {
     <Card className="overflow-hidden" title="What Happens Next?">
       <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
         {steps.map((step) => (
-          <div key={step.number} className="border-l border-emerald-500/30 pl-3">
-            <span className="text-[10px] font-bold text-emerald-500">{step.number}</span>
-            <h3 className="mt-2 text-sm font-medium leading-5 text-slate-200">{step.title}</h3>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">{step.description}</p>
+          <div key={step.number} className="border-l border-[#BFD6BA] pl-3">
+            <span className="text-[10px] font-bold text-[#2E7D32]">{step.number}</span>
+            <h3 className="mt-2 text-sm font-medium leading-5 text-[#1F2A24]">{step.title}</h3>
+            <p className="mt-1 text-[11px] leading-4 text-[#667065]">{step.description}</p>
           </div>
         ))}
       </div>

@@ -6,20 +6,20 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, status }: PageHeaderProps) {
   return (
-    <header className="shrink-0 border-b border-emerald-950/80 bg-[#07110f]/90">
+    <header className="shrink-0 border-b border-[#DDE5D8] bg-[#FCFCF8]">
       <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 py-3 sm:px-8 lg:px-10">
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg border border-emerald-800 bg-emerald-950/60 text-emerald-400">
+          <div className="flex size-9 items-center justify-center rounded-lg border border-[#CFE0CA] bg-[#EAF5EA] text-[#2E7D32]">
             <LuSprout aria-hidden="true" className="size-5" />
           </div>
           <div>
-            <p className="text-lg font-semibold tracking-tight text-white">AgroMind</p>
-            {title && <p className="text-xs font-medium text-emerald-400">{title}</p>}
-            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+            <p className="text-lg font-semibold tracking-tight text-[#1F2A24]">AgroMind</p>
+            {title && <p className="text-xs font-medium text-[#2E7D32]">{title}</p>}
+            {subtitle && <p className="text-xs text-[#667065]">{subtitle}</p>}
           </div>
         </div>
         {status && (
-          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
+          <span className="rounded-full border border-[#CFE0CA] bg-[#EAF5EA] px-3 py-1.5 text-xs font-medium text-[#2E7D32]">
             {status}
           </span>
         )}

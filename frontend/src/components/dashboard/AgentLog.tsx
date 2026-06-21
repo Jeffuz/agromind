@@ -14,8 +14,8 @@ export function AgentLog() {
       <ol className="space-y-1.5">
         {logEntries.map((entry, index) => (
           <li key={`${entry.tick}-${index}`} className="grid grid-cols-[42px_1fr] gap-2 text-[11px] leading-4">
-            <span className="font-medium text-emerald-500">{entry.tick}</span>
-            <span className="text-slate-400">{entry.message}</span>
+            <span className="font-medium text-[#2E7D32]">{entry.tick}</span>
+            <span className="text-[#667065]">{entry.message}</span>
           </li>
         ))}
       </ol>
