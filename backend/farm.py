@@ -41,11 +41,13 @@ def visit_plant(row: int, col: int) -> float:
     return score
 
 
-def get_effective_grid(default_unvisited: float = 0.3) -> np.ndarray:
+def get_effective_grid(default_unvisited: float = 1.1) -> np.ndarray:
     """
     Build the grid the MDP reasons over.
-    Known cells use their actual CV score; unvisited cells get a small default
-    reward so the robot is still drawn toward unexplored territory.
+    Unvisited cells get 1.1 — above any real infection score (max 1.0) — so
+    the robot always prefers unexplored cells over revisiting known ones.
+    Visited cells keep their actual score so the infection landscape still
+    shapes which unvisited neighbours are approached first.
     """
     grid = np.full((GRID_SIZE, GRID_SIZE), default_unvisited, dtype=float)
     for r in range(GRID_SIZE):
