@@ -30,7 +30,7 @@ function getRiskOverlay(risk: number) {
 }
 
 function getBeliefSurface(plant: Plant) {
-  if (plant.beliefLabel === "unknown") return "border-[#C8CEC4] bg-[#E3E7E0]";
+  if (!plant.inspected || plant.beliefLabel === "unknown") return "border-[#C8CEC4] bg-[#E3E7E0]";
   if (plant.beliefRisk < 0.3) return "border-[#A8C8AC] bg-[#DDEBDD]";
   return "border-[#9FBEA4] bg-[#D7E7D7]";
 }
@@ -43,9 +43,9 @@ export function PlantCell({ plant, variant, showActualRiskOverlay = false, hasRo
   const textureX = 20 + ((plant.row * 11 + plant.col * 7) % 60);
   const textureY = 20 + ((plant.row * 5 + plant.col * 13) % 60);
   const isBelief = variant === "belief";
-  const isUnknown = isBelief && plant.beliefLabel === "unknown";
+  const isUnknown = isBelief && (!plant.inspected || plant.beliefLabel === "unknown");
   const displayedRisk = isBelief ? plant.beliefRisk : plant.actualRisk;
-  const showRisk = isBelief ? plant.beliefLabel !== "unknown" : showActualRiskOverlay;
+  const showRisk = isBelief ? plant.inspected && plant.beliefLabel !== "unknown" : showActualRiskOverlay;
   const stateLabel = isBelief
     ? isUnknown ? "unknown" : `${getRiskLevel(plant.beliefRisk)} belief risk`
     : showActualRiskOverlay ? `${getRiskLevel(plant.actualRisk)} actual risk, ${plant.trueLabel.replaceAll("_", " ")}` : "ground truth hidden";

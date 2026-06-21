@@ -50,7 +50,6 @@ export function DashboardPage() {
         <SimulationToolbar
           showActualRiskOverlay={showActualRiskOverlay}
           onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
-          onReset={simulationActions.resetSimulation}
           onToggleAutoRun={simulationActions.toggleAutoRun}
           onSetAutoRunSpeed={simulationActions.setAutoRunSpeed}
           isAutoRunning={isAutoRunning}

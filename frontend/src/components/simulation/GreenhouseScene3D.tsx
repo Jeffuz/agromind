@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { FiZoomIn, FiZoomOut } from "react-icons/fi";
-import { Color, Group, InstancedMesh, Object3D, OrthographicCamera, Vector3 } from "three";
+import { CanvasTexture, Color, DoubleSide, Group, InstancedMesh, LinearFilter, Object3D, OrthographicCamera, Vector3 } from "three";
 import type { Plant, Robot } from "@/lib/types";
 
 interface GreenhouseScene3DProps {
@@ -110,6 +110,101 @@ function getRiskColor(risk: number) {
   return "#C76650";
 }
 
+function getBedSize(rows: number, cols: number) {
+  const first = getGridPosition(0, 0, rows, cols);
+  const last = getGridPosition(rows - 1, cols - 1, rows, cols);
+  const width = Math.abs(last[0] - first[0]) + 1.2;
+  const depth = Math.abs(last[1] - first[1]) + 1.2;
+  return { width, depth };
+}
+
+function getHeatmapColor(risk: number) {
+  if (risk < 0.3) return [89, 179, 101];
+  if (risk < 0.55) return [223, 194, 77];
+  if (risk < 0.78) return [232, 140, 62];
+  return [215, 77, 68];
+}
+
+function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProps, "plants" | "rows" | "cols">) {
+  const heatmap = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const texture = new CanvasTexture(canvas);
+    texture.minFilter = LinearFilter;
+    texture.magFilter = LinearFilter;
+    texture.generateMipmaps = false;
+    return { canvas, texture };
+  }, []);
+
+  useEffect(() => {
+    const context = heatmap.canvas.getContext("2d");
+    if (!context) return;
+
+    const { width, depth } = getBedSize(rows, cols);
+    const halfWidth = width / 2;
+    const halfDepth = depth / 2;
+    const inspectedPlants = plants.filter((plant) => plant.inspected && plant.beliefLabel !== "unknown");
+
+    context.clearRect(0, 0, heatmap.canvas.width, heatmap.canvas.height);
+    context.globalCompositeOperation = "source-over";
+
+    if (inspectedPlants.length > 0) {
+      inspectedPlants.forEach((plant) => {
+        const [x, z] = getGridPosition(plant.row, plant.col, rows, cols);
+        const normalizedX = (x + halfWidth) / width;
+        const normalizedY = 1 - ((z + halfDepth) / depth);
+        const centerX = normalizedX * heatmap.canvas.width;
+        const centerY = normalizedY * heatmap.canvas.height;
+        const intensity = Math.max(0.08, Math.min(0.95, plant.beliefRisk));
+        const [red, green, blue] = getHeatmapColor(plant.beliefRisk);
+        const coreAlpha = 0.08 + intensity * 0.26;
+        const haloAlpha = 0.02 + intensity * 0.14;
+        const radius = Math.max(heatmap.canvas.width, heatmap.canvas.height) * (0.06 + intensity * 0.12);
+        const haloRadius = radius * 2.1;
+
+        const halo = context.createRadialGradient(centerX, centerY, radius * 0.25, centerX, centerY, haloRadius);
+        halo.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${haloAlpha})`);
+        halo.addColorStop(0.55, `rgba(${red}, ${green}, ${blue}, ${Math.max(haloAlpha * 0.45, 0.015)})`);
+        halo.addColorStop(1, "rgba(0, 0, 0, 0)");
+        context.fillStyle = halo;
+        context.beginPath();
+        context.arc(centerX, centerY, haloRadius, 0, Math.PI * 2);
+        context.fill();
+
+        const core = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+        core.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${coreAlpha})`);
+        core.addColorStop(0.65, `rgba(${red}, ${green}, ${blue}, ${Math.max(coreAlpha * 0.5, 0.02)})`);
+        core.addColorStop(1, "rgba(0, 0, 0, 0)");
+        context.fillStyle = core;
+        context.beginPath();
+        context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        context.fill();
+      });
+    }
+
+    // eslint-disable-next-line react-hooks/immutability
+    heatmap.texture.needsUpdate = true;
+  }, [cols, heatmap, plants, rows]);
+
+  const { width, depth } = getBedSize(rows, cols);
+
+  return (
+    <mesh position={[0, 0.061, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+      <planeGeometry args={[width, depth]} />
+      <meshBasicMaterial
+        map={heatmap.texture}
+        transparent
+        opacity={0.88}
+        depthWrite={false}
+        depthTest={false}
+        side={DoubleSide}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
 function GreenhouseBeds({ rows, cols, mode }: Pick<GreenhouseScene3DProps, "rows" | "cols" | "mode">) {
   const first = getGridPosition(0, 0, rows, cols);
   const last = getGridPosition(rows - 1, cols - 1, rows, cols);
@@ -173,7 +268,7 @@ function InstancedPlants({
       const scale = 0.86 + ((plant.row * 3 + plant.col * 7) % 5) * 0.035;
       const offsetX = Math.cos(rotation) * 0.038;
       const offsetZ = Math.sin(rotation) * 0.038;
-      const unknown = mode === "belief" && plant.beliefLabel === "unknown";
+      const unknown = mode === "belief" && (!plant.inspected || plant.beliefLabel === "unknown");
       const leafColor = unknown
         ? new Color("#9DA9A0")
         : new Color((plant.row + plant.col) % 3 === 0 ? "#2F8F43" : "#4DA852");
@@ -362,6 +457,7 @@ function Scene({
       <directionalLight position={[6, 10, 8]} intensity={1.55} color="#FFFDF4" />
       <directionalLight position={[-5, 5, -4]} intensity={0.45} color="#D9E8DD" />
       <GreenhouseBeds rows={rows} cols={cols} mode={mode} />
+      {mode === "belief" && <BeliefHeatmapOverlay plants={plants} rows={rows} cols={cols} />}
       <InstancedPlants
         plants={plants}
         rows={rows}
