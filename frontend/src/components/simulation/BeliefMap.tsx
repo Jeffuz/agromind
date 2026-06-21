@@ -28,9 +28,6 @@ export function BeliefMap({ plants, rows, cols }: BeliefMapProps) {
           {plants.length > 0 ? (
             <>
               <GreenhouseScene3D plants={plants} rows={rows} cols={cols} mode="belief" />
-              <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-white/80 px-2 py-1 text-[10px] text-[#667065] shadow-sm">
-                Drag to rotate · Shift-drag to pan · Scroll to zoom
-              </span>
             </>
           ) : (
             <p className="text-sm font-medium text-[#667065]">No greenhouse generated yet.</p>

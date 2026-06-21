@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { FiZoomIn, FiZoomOut } from "react-icons/fi";
+import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiZoomIn, FiZoomOut } from "react-icons/fi";
 import { Color, InstancedMesh, Object3D, OrthographicCamera, Vector3 } from "three";
 import type { Plant, Robot } from "@/lib/types";
 
@@ -19,6 +19,10 @@ interface GreenhouseScene3DProps {
 interface CameraControlApi {
   zoomIn: () => void;
   zoomOut: () => void;
+  panLeft: () => void;
+  panRight: () => void;
+  panUp: () => void;
+  panDown: () => void;
 }
 
 function CameraControls({ controlsRef }: { controlsRef: MutableRefObject<CameraControlApi | null> }) {
@@ -27,42 +31,32 @@ function CameraControls({ controlsRef }: { controlsRef: MutableRefObject<CameraC
   useEffect(() => {
     const orthographicCamera = camera as OrthographicCamera;
     const canvas = gl.domElement;
+    const target = new Vector3(0, 0, 0);
     let dragging = false;
     let lastX = 0;
     let lastY = 0;
-    let azimuth = 0;
-    let polar = Math.PI / 36;
-    const distance = 18;
-    const target = new Vector3(0, 0, 0);
 
-    const applyOrbit = () => {
-      orthographicCamera.position.set(
-        target.x + distance * Math.sin(polar) * Math.sin(azimuth),
-        target.y + distance * Math.cos(polar),
-        target.z + distance * Math.sin(polar) * Math.cos(azimuth),
-      );
-      orthographicCamera.up.set(0, 0, -1);
-      orthographicCamera.lookAt(target);
-    };
     const setZoom = (zoom: number) => {
       orthographicCamera.zoom = Math.min(90, Math.max(25, zoom));
       orthographicCamera.updateProjectionMatrix();
     };
-    const rotate = (azimuthDelta: number, polarDelta: number) => {
-      azimuth += azimuthDelta;
-      polar = Math.min(1.25, Math.max(0.001, polar + polarDelta));
-      applyOrbit();
+    const pan = (x: number, z: number) => {
+      target.x += x;
+      target.z += z;
+      orthographicCamera.position.x += x;
+      orthographicCamera.position.z += z;
+      orthographicCamera.lookAt(target);
     };
 
     controlsRef.current = {
       zoomIn: () => setZoom(orthographicCamera.zoom + 8),
       zoomOut: () => setZoom(orthographicCamera.zoom - 8),
+      panLeft: () => pan(-0.7, 0),
+      panRight: () => pan(0.7, 0),
+      panUp: () => pan(0, -0.7),
+      panDown: () => pan(0, 0.7),
     };
 
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      setZoom(orthographicCamera.zoom - event.deltaY * 0.035);
-    };
     const handlePointerDown = (event: PointerEvent) => {
       dragging = true;
       lastX = event.clientX;
@@ -71,16 +65,8 @@ function CameraControls({ controlsRef }: { controlsRef: MutableRefObject<CameraC
     };
     const handlePointerMove = (event: PointerEvent) => {
       if (!dragging) return;
-      const deltaX = event.clientX - lastX;
-      const deltaY = event.clientY - lastY;
-      if (event.shiftKey) {
-        const scale = 1 / (orthographicCamera.zoom * 5);
-        target.x -= deltaX * scale;
-        target.z -= deltaY * scale;
-        applyOrbit();
-      } else {
-        rotate(-deltaX * 0.008, deltaY * 0.008);
-      }
+      const scale = 1 / (orthographicCamera.zoom * 5);
+      pan(-(event.clientX - lastX) * scale, -(event.clientY - lastY) * scale);
       lastX = event.clientX;
       lastY = event.clientY;
     };
@@ -89,7 +75,6 @@ function CameraControls({ controlsRef }: { controlsRef: MutableRefObject<CameraC
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     };
 
-    canvas.addEventListener("wheel", handleWheel, { passive: false });
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerup", handlePointerUp);
@@ -97,7 +82,6 @@ function CameraControls({ controlsRef }: { controlsRef: MutableRefObject<CameraC
 
     return () => {
       controlsRef.current = null;
-      canvas.removeEventListener("wheel", handleWheel);
       canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
@@ -313,7 +297,7 @@ export function GreenhouseScene3D(props: GreenhouseScene3DProps) {
     <div className="relative h-full w-full">
       <Canvas
         orthographic
-        camera={{ position: [0, 17.93, 15], zoom: 46, near: 0.1, far: 100 }}
+        camera={{ position: [0, 18, 17], zoom: 46, near: 0.1, far: 100 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ camera }) => {
@@ -336,6 +320,19 @@ export function GreenhouseScene3D(props: GreenhouseScene3DProps) {
         <button type="button" aria-label="Zoom out" onClick={() => controlsRef.current?.zoomOut()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
           <FiZoomOut />
         </button>
+        {/* <span className="mx-0.5 w-px bg-[#DDE5D8]" />
+        <button type="button" aria-label="Move left" onClick={() => controlsRef.current?.panLeft()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
+          <FiArrowLeft />
+        </button>
+        <button type="button" aria-label="Move up" onClick={() => controlsRef.current?.panUp()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
+          <FiArrowUp />
+        </button>
+        <button type="button" aria-label="Move down" onClick={() => controlsRef.current?.panDown()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
+          <FiArrowDown />
+        </button>
+        <button type="button" aria-label="Move right" onClick={() => controlsRef.current?.panRight()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
+          <FiArrowRight />
+        </button> */}
       </div>
     </div>
   );
