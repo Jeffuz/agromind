@@ -17,10 +17,10 @@ export function BeliefMap({ plants, rows, cols }: BeliefMapProps) {
       subtitle="What the agent currently believes after scouting observations."
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-[#C9DDD6] bg-[#EEF6F3] p-3">
+        <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-auto rounded-lg border border-[#C9DDD6] bg-[#EEF3EF] p-3 shadow-inner">
           <div
             aria-label={`${rows} by ${cols} digital twin belief grid`}
-            className="grid w-full max-w-5xl gap-px"
+            className="grid w-full min-w-[620px] max-w-5xl gap-x-[2px] gap-y-[3px] rounded-md bg-[#D4DCD5] p-1.5 shadow-[inset_0_0_0_1px_rgba(95,112,101,0.12)] lg:min-w-0"
             style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
           >
             {plants.map((plant) => (

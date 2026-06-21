@@ -11,7 +11,7 @@ export const scenarioPresets: ScenarioPreset[] = [
     id: "balanced",
     name: "Balanced",
     description: "Typical conditions, moderate risk.",
-    environment: { humidity: 72, temperature: 25, light: 520, soilMoisture: 55 },
+    environment: { humidity: 78, temperature: 26.4, light: 420, soilMoisture: 28 },
   },
   {
     id: "high-humidity",
