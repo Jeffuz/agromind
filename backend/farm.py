@@ -2,6 +2,13 @@ import numpy as np
 
 GRID_SIZE = 10
 
+
+def plant_id_for(row: int, col: int) -> str:
+    """Return the canonical plant identifier for a grid coordinate."""
+    if not (0 <= row < GRID_SIZE and 0 <= col < GRID_SIZE):
+        raise ValueError("Plant coordinates are outside the farm grid.")
+    return f"plant_{row:02d}_{col:02d}"
+
 # Ground truth infection levels — hidden from the robot until it visits a cell.
 # Simulates what the CV model would predict for each plant.
 def _generate_true_grid() -> np.ndarray:
@@ -41,11 +48,11 @@ def visit_plant(row: int, col: int) -> float:
     return score
 
 
-def record_observation(row: int, col: int, score: float) -> None:
-    """Store a real CV risk score for a plant visited by the robot."""
-    if not 0.0 <= score <= 1.0:
+def record_observation(row: int, col: int, belief_risk: float) -> None:
+    """Store a confidence-aware disease belief for a robot-visited plant."""
+    if not 0.0 <= belief_risk <= 1.0:
         raise ValueError("Observation score must be between 0 and 1.")
-    observed[row][col] = float(score)
+    observed[row][col] = float(belief_risk)
 
 
 def get_effective_grid(default_unvisited: float = 0.3) -> np.ndarray:
