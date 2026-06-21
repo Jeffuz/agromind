@@ -1,5 +1,5 @@
-import { ConfigurationPage } from "@/components/config/ConfigurationPage";
+import { HomePage as LandingPage } from "@/components/home/HomePage";
 
 export default function HomePage() {
-  return <ConfigurationPage />;
+  return <LandingPage />;
 }
