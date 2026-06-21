@@ -5,7 +5,9 @@ interface SimulationToolbarProps {
   onToggleActualRiskOverlay: () => void;
   onReset: () => void;
   onRunAgentStep: () => void;
+  onToggleAutoRun: () => void;
   agentRunStatus: "idle" | "planning" | "moving" | "processing" | "complete";
+  isAutoRunning: boolean;
 }
 
 export function SimulationToolbar({
@@ -13,32 +15,38 @@ export function SimulationToolbar({
   onToggleActualRiskOverlay,
   onReset,
   onRunAgentStep,
+  onToggleAutoRun,
   agentRunStatus,
+  isAutoRunning,
 }: SimulationToolbarProps) {
   const isRunning = agentRunStatus === "moving" || agentRunStatus === "processing";
   const runLabel = agentRunStatus === "moving"
     ? "Robot moving..."
     : agentRunStatus === "processing"
-      ? "Processing image..."
+      ? "Processing..."
       : agentRunStatus === "complete"
         ? "Scouting complete"
-        : "Run Agent Step";
+        : "Run One Step";
 
   return (
     <section aria-label="Simulation controls" className="flex shrink-0 flex-col gap-3 rounded-xl border border-[#DDE5D8] bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
+          onClick={onToggleAutoRun}
+          className="flex min-w-[170px] items-center justify-center gap-2 rounded-xl border border-[#2E7D32] bg-[#2E7D32] px-5 py-3 text-sm font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <FiRepeat aria-hidden="true" />
+          {isAutoRunning ? "Stop Auto Run" : "Auto Run"}
+        </button>
+        {/* <button
+          type="button"
           onClick={onRunAgentStep}
-          disabled={isRunning || agentRunStatus === "complete"}
-          className="flex items-center gap-2 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-4 py-2 text-xs font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isRunning || isAutoRunning || agentRunStatus === "complete"}
+          className="flex items-center gap-2 rounded-lg border border-[#BFD6BA] bg-[#EAF5EA] px-3 py-2 text-xs font-medium text-[#2E7D32] hover:bg-[#DDEEDD] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FiPlay aria-hidden="true" />
           {runLabel}
-        </button>
-        <button type="button" className="flex items-center gap-2 rounded-lg border border-[#BFD6BA] bg-[#EAF5EA] px-3 py-2 text-xs font-medium text-[#2E7D32]">
-          <FiRepeat aria-hidden="true" />
-          Auto Run
         </button>
         <button type="button" className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#39463E]">
           <FiPause aria-hidden="true" />
@@ -47,7 +55,7 @@ export function SimulationToolbar({
         <button type="button" onClick={onReset} className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#667065]">
           <FiRefreshCw aria-hidden="true" />
           Reset
-        </button>
+        </button> */}
       </div>
       <button
         type="button"

@@ -14,6 +14,42 @@ export const defaultEnvironment: EnvironmentParams = {
   soilMoisture: 28,
 };
 
+let autoRunTimer: number | undefined;
+
+function clearAutoRunTimer() {
+  if (autoRunTimer !== undefined) {
+    window.clearTimeout(autoRunTimer);
+    autoRunTimer = undefined;
+  }
+}
+
+function scheduleAutoRunTick(delay: number) {
+  clearAutoRunTimer();
+  autoRunTimer = window.setTimeout(() => {
+    const current = useSimulationStore.getState();
+    if (!current.isAutoRunning) return;
+
+    if (current.agentRunStatus === "idle") {
+      current.runAgentStep();
+      return;
+    }
+
+    if (current.agentRunStatus === "moving") {
+      current.advanceRobotAlongPath();
+      return;
+    }
+
+    if (current.agentRunStatus === "processing") {
+      current.completeAgentInspection();
+      return;
+    }
+
+    if (current.agentRunStatus === "complete") {
+      current.stopAutoRun();
+    }
+  }, delay);
+}
+
 const createInitialState = (): SimulationState => ({
   phase: "config",
   tick: 0,
@@ -25,6 +61,7 @@ const createInitialState = (): SimulationState => ({
   robots: [],
   showActualRiskOverlay: false,
   agentRunStatus: "idle",
+  isAutoRunning: false,
   activeRobotId: undefined,
   activeTargetPlantId: undefined,
   activePath: [],
@@ -50,6 +87,9 @@ interface SimulationActions {
   advanceRobotAlongPath: () => void;
   completeAgentInspection: () => void;
   cancelAgentRun: () => void;
+  startAutoRun: () => void;
+  stopAutoRun: () => void;
+  toggleAutoRun: () => void;
 }
 
 type SimulationStore = SimulationState & SimulationActions;
@@ -63,6 +103,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   generateSimulation: () => {
     const current = get();
     const { plants, robots } = generateGreenhouse(current);
+    clearAutoRunTimer();
     set({
       phase: "dashboard",
       tick: 0,
@@ -70,6 +111,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       robots,
       showActualRiskOverlay: false,
       agentRunStatus: "idle",
+      isAutoRunning: false,
       activeRobotId: undefined,
       activeTargetPlantId: undefined,
       activePath: [],
@@ -94,9 +136,33 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   toggleActualRiskOverlay: () => set((current) => ({
     showActualRiskOverlay: !current.showActualRiskOverlay,
   })),
-  resetSimulation: () => set(createInitialState()),
+  resetSimulation: () => {
+    clearAutoRunTimer();
+    set(createInitialState());
+  },
   selectPlant: (plantId) => set({ selectedPlantId: plantId }),
   clearSelectedPlant: () => set({ selectedPlantId: undefined }),
+  startAutoRun: () => {
+    const current = get();
+    if (current.isAutoRunning) return;
+    set({ isAutoRunning: true });
+    scheduleAutoRunTick(current.agentRunStatus === "idle" ? 200 : 0);
+  },
+  stopAutoRun: () => {
+    clearAutoRunTimer();
+    set({ isAutoRunning: false });
+  },
+  toggleAutoRun: () => {
+    const current = get();
+    if (current.isAutoRunning) {
+      clearAutoRunTimer();
+      set({ isAutoRunning: false });
+      return;
+    }
+
+    set({ isAutoRunning: true });
+    scheduleAutoRunTick(current.agentRunStatus === "idle" ? 200 : 0);
+  },
   inspectSelectedPlant: () => {
     const current = get();
     if (!current.selectedPlantId) return;
@@ -165,6 +231,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     if (uninspectedPlants.length === 0) {
       set({
         agentRunStatus: "complete",
+        isAutoRunning: false,
         activeRobotId: undefined,
         activeTargetPlantId: undefined,
         activePath: [],
@@ -180,6 +247,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           },
         ],
       });
+      clearAutoRunTimer();
       return;
     }
 
@@ -201,7 +269,6 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       activeTargetPlantId: target.id,
       activePath: path,
       activePathIndex: 0,
-      selectedPlantId: target.id,
       robots: current.robots.map((item) => (
         item.id === robot.id
           ? { ...item, targetPlantId: target.id, status: nextRobotStatus }
@@ -225,6 +292,10 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         },
       ],
     });
+
+    if (current.isAutoRunning) {
+      scheduleAutoRunTick(path.length > 0 ? 125 : 850);
+    }
   },
   advanceRobotAlongPath: () => {
     const current = get();
@@ -280,6 +351,10 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           ]
         : current.agentLogs,
     });
+
+    if (current.isAutoRunning) {
+      scheduleAutoRunTick(isLastStep ? 850 : 125);
+    }
   },
   completeAgentInspection: () => {
     const current = get();
@@ -319,13 +394,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
           : item
       )),
       metrics: calculateSimulationMetrics(updatedPlants),
-      selectedPlantId: targetId,
       lastInspectedPlantId: targetId,
       activeRobotId: undefined,
       activeTargetPlantId: undefined,
       activePath: [],
       activePathIndex: 0,
       agentRunStatus: remainingUninspected ? "idle" : "complete",
+      isAutoRunning: remainingUninspected ? current.isAutoRunning : false,
       agentLogs: [
         ...current.agentLogs,
         {
@@ -361,11 +436,21 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
               nextAction: "Inspect adjacent plants around the detected signal.",
             },
     });
+
+    if (remainingUninspected) {
+      if (current.isAutoRunning) {
+        scheduleAutoRunTick(200);
+      }
+    } else {
+      clearAutoRunTimer();
+    }
   },
   cancelAgentRun: () => {
     const current = get();
+    clearAutoRunTimer();
     set({
       agentRunStatus: "idle",
+      isAutoRunning: false,
       activeRobotId: undefined,
       activeTargetPlantId: undefined,
       activePath: [],
@@ -391,4 +476,7 @@ export const simulationActions = {
   advanceRobotAlongPath: () => useSimulationStore.getState().advanceRobotAlongPath(),
   completeAgentInspection: () => useSimulationStore.getState().completeAgentInspection(),
   cancelAgentRun: () => useSimulationStore.getState().cancelAgentRun(),
+  startAutoRun: () => useSimulationStore.getState().startAutoRun(),
+  stopAutoRun: () => useSimulationStore.getState().stopAutoRun(),
+  toggleAutoRun: () => useSimulationStore.getState().toggleAutoRun(),
 };

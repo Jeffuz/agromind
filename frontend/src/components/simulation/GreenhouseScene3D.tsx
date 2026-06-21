@@ -173,7 +173,7 @@ function InstancedPlants({
       const scale = 0.86 + ((plant.row * 3 + plant.col * 7) % 5) * 0.035;
       const offsetX = Math.cos(rotation) * 0.038;
       const offsetZ = Math.sin(rotation) * 0.038;
-      const unknown = mode === "belief" && (!plant.inspected || plant.beliefLabel === "unknown");
+      const unknown = mode === "belief" && plant.beliefLabel === "unknown";
       const leafColor = unknown
         ? new Color("#9DA9A0")
         : new Color((plant.row + plant.col) % 3 === 0 ? "#2F8F43" : "#4DA852");
