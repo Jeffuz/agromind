@@ -18,6 +18,10 @@ export type Plant = {
   row: number;
   col: number;
   trueLabel: DiseaseLabel;
+  imageUrl?: string;
+  cvPrediction?: DiseaseLabel;
+  cvConfidence?: number;
+  inspectedAtTick?: number;
   beliefLabel: BeliefLabel;
   actualRisk: number;
   beliefRisk: number;
@@ -74,4 +78,6 @@ export type SimulationState = {
   metrics: Metrics;
   agentLogs: AgentLogEntry[];
   recommendation?: Recommendation;
+  selectedPlantId?: string;
+  lastInspectedPlantId?: string;
 };

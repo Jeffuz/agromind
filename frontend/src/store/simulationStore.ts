@@ -24,6 +24,8 @@ const createInitialState = (): SimulationState => ({
   showActualRiskOverlay: false,
   metrics: calculateInitialMetrics([]),
   agentLogs: [],
+  selectedPlantId: undefined,
+  lastInspectedPlantId: undefined,
 });
 
 interface SimulationActions {
@@ -34,6 +36,8 @@ interface SimulationActions {
   generateSimulation: () => void;
   toggleActualRiskOverlay: () => void;
   resetSimulation: () => void;
+  selectPlant: (plantId: string) => void;
+  clearSelectedPlant: () => void;
 }
 
 type SimulationStore = SimulationState & SimulationActions;
@@ -66,12 +70,16 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
         body: "Start the agent loop to begin building the digital twin.",
         nextAction: "Run the first scouting step.",
       },
+      selectedPlantId: undefined,
+      lastInspectedPlantId: undefined,
     });
   },
   toggleActualRiskOverlay: () => set((current) => ({
     showActualRiskOverlay: !current.showActualRiskOverlay,
   })),
   resetSimulation: () => set(createInitialState()),
+  selectPlant: (plantId) => set({ selectedPlantId: plantId }),
+  clearSelectedPlant: () => set({ selectedPlantId: undefined }),
 }));
 
 export const simulationActions = {
@@ -82,4 +90,6 @@ export const simulationActions = {
   generateSimulation: () => useSimulationStore.getState().generateSimulation(),
   toggleActualRiskOverlay: () => useSimulationStore.getState().toggleActualRiskOverlay(),
   resetSimulation: () => useSimulationStore.getState().resetSimulation(),
+  selectPlant: (plantId: string) => useSimulationStore.getState().selectPlant(plantId),
+  clearSelectedPlant: () => useSimulationStore.getState().clearSelectedPlant(),
 };

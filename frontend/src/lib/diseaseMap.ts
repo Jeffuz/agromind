@@ -1,3 +1,4 @@
+import { getTomatoImageForPlant } from "./tomatoImages";
 import type { DiseaseLabel, EnvironmentParams, Plant, Robot } from "./types";
 
 interface GreenhouseInput {
@@ -12,19 +13,47 @@ interface GreenhouseOutput {
   robots: Robot[];
 }
 
-function getEnvironmentRisk(environment: EnvironmentParams) {
-  let risk = 0;
-  if (environment.humidity > 80) risk += 0.35;
-  if (environment.soilMoisture > 70) risk += 0.25;
-  if (environment.light < 450) risk += 0.15;
-  if (environment.temperature >= 18 && environment.temperature <= 27) risk += 0.2;
-  return Math.min(risk, 1);
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
 }
 
-function getDiseaseLabel(risk: number, row: number, col: number): DiseaseLabel {
-  if (risk < 0.38) return "healthy";
-  const labels: DiseaseLabel[] = ["early_blight", "late_blight", "leaf_mold"];
-  return labels[(row * 3 + col * 5) % labels.length];
+function normalizeRange(value: number, min: number, max: number) {
+  if (max <= min) return 0;
+  return clamp01((value - min) / (max - min));
+}
+
+function getNoise(row: number, col: number) {
+  const raw = Math.sin(row * 13.13 + col * 17.17 + row * col * 0.11) * 43758.5453;
+  return raw - Math.floor(raw);
+}
+
+function getEnvironmentRisk(environment: EnvironmentParams) {
+  const humidityRisk = normalizeRange(environment.humidity, 65, 92);
+  const soilMoistureRisk = normalizeRange(environment.soilMoisture, 35, 85);
+  const lowLightRisk = clamp01(1 - normalizeRange(environment.light, 250, 650));
+  const mildTempRisk = clamp01(1 - Math.abs(environment.temperature - 22.5) / 7.5);
+  return clamp01(0.35 * humidityRisk + 0.25 * soilMoistureRisk + 0.2 * lowLightRisk + 0.2 * mildTempRisk);
+}
+
+function getDiseaseLabel(actualRisk: number, environment: EnvironmentParams, row: number, col: number): DiseaseLabel {
+  if (actualRisk < 0.35) return "healthy";
+
+  const humidityRisk = normalizeRange(environment.humidity, 65, 92);
+  const soilMoistureRisk = normalizeRange(environment.soilMoisture, 35, 85);
+  const lowLightRisk = clamp01(1 - normalizeRange(environment.light, 250, 650));
+  const mildTempRisk = clamp01(1 - Math.abs(environment.temperature - 22.5) / 7.5);
+  const warmTempRisk = clamp01(1 - Math.abs(environment.temperature - 27) / 5.5);
+  const coolTempRisk = clamp01(1 - Math.abs(environment.temperature - 19) / 5);
+  const generalStress = clamp01(Math.max(lowLightRisk, soilMoistureRisk, humidityRisk * 0.8));
+  const noise = getNoise(row, col);
+
+  const scores: Record<Exclude<DiseaseLabel, "healthy">, number> = {
+    leaf_mold: 0.48 * humidityRisk + 0.28 * lowLightRisk + 0.18 * mildTempRisk + 0.06 * noise,
+    late_blight: 0.44 * humidityRisk + 0.34 * soilMoistureRisk + 0.16 * coolTempRisk + 0.06 * (1 - noise),
+    early_blight: 0.46 * warmTempRisk + 0.28 * humidityRisk + 0.2 * generalStress + 0.06 * noise,
+  };
+
+  return (Object.entries(scores).sort((left, right) => right[1] - left[1])[0][0] as DiseaseLabel);
 }
 
 export function generateGreenhouse({ rows, cols, robotCount, environment }: GreenhouseInput): GreenhouseOutput {
@@ -48,16 +77,19 @@ export function generateGreenhouse({ rows, cols, robotCount, environment }: Gree
         ...centers.map((center) => Math.hypot(row - center.row, col - center.col)),
       );
       const clusterStrength = Math.max(0, 1 - closestDistance / radius);
-      const actualRisk = Math.min(
-        1,
-        Number((environmentRisk * 0.3 + clusterStrength * (0.3 + environmentRisk * 0.55)).toFixed(3)),
+      const clusterNoise = (getNoise(row + 11, col + 7) - 0.5) * 0.16;
+      const clusterStrengthAdjustedByEnvironment = clamp01(
+        clusterStrength * (0.55 + environmentRisk * 0.45) + clusterNoise,
       );
+      const actualRisk = clamp01(0.35 * environmentRisk + 0.65 * clusterStrengthAdjustedByEnvironment);
+      const trueLabel = getDiseaseLabel(actualRisk, environment, row, col);
 
       plants.push({
         id: `plant-r${row}-c${col}`,
         row,
         col,
-        trueLabel: getDiseaseLabel(actualRisk, row, col),
+        trueLabel,
+        imageUrl: getTomatoImageForPlant(trueLabel, row, col),
         beliefLabel: "unknown",
         actualRisk,
         beliefRisk: 0,

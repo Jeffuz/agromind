@@ -14,12 +14,14 @@ interface FarmMapProps {
   title?: string;
   subtitle?: string;
   placeholder?: string;
-  plants?: Plant[];
+  plants?: Plant[]; 
   robots?: Robot[];
   rows?: number;
   cols?: number;
   showActualRiskOverlay?: boolean;
   interactive?: boolean;
+  selectedPlantId?: string;
+  onPlantSelect?: (plantId: string, anchor?: { x: number; y: number }) => void;
 }
 
 export function FarmMap({
@@ -32,6 +34,8 @@ export function FarmMap({
   cols = 0,
   showActualRiskOverlay = false,
   interactive = true,
+  selectedPlantId,
+  onPlantSelect,
 }: FarmMapProps) {
   const hasGreenhouse = plants.length > 0 && rows > 0 && cols > 0;
 
@@ -42,13 +46,15 @@ export function FarmMap({
           {hasGreenhouse ? (
             <>
               <GreenhouseScene3D
-                plants={plants}
-                robots={robots}
-                rows={rows}
-                cols={cols}
+              plants={plants}
+              robots={robots}
+              rows={rows}
+              cols={cols}
               mode="real"
               showActualRiskOverlay={showActualRiskOverlay}
               interactive={interactive}
+              selectedPlantId={selectedPlantId}
+              onPlantSelect={onPlantSelect}
               />
             </>
           ) : (

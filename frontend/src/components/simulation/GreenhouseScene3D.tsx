@@ -15,6 +15,8 @@ interface GreenhouseScene3DProps {
   mode: "real" | "belief";
   showActualRiskOverlay?: boolean;
   interactive?: boolean;
+  selectedPlantId?: string;
+  onPlantSelect?: (plantId: string, anchor?: { x: number; y: number }) => void;
 }
 
 interface CameraControlApi {
@@ -132,13 +134,30 @@ function GreenhouseBeds({ rows, cols, mode }: Pick<GreenhouseScene3DProps, "rows
   );
 }
 
-function InstancedPlants({ plants, rows, cols, mode, showActualRiskOverlay = false }: Omit<GreenhouseScene3DProps, "robots">) {
+function InstancedPlants({
+  plants,
+  rows,
+  cols,
+  mode,
+  showActualRiskOverlay = false,
+  selectedPlantId,
+  onPlantSelect,
+}: Omit<GreenhouseScene3DProps, "robots">) {
   const stemsRef = useRef<InstancedMesh>(null);
   const leavesARef = useRef<InstancedMesh>(null);
   const leavesBRef = useRef<InstancedMesh>(null);
   const shadowsRef = useRef<InstancedMesh>(null);
   const overlaysRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
+
+  function selectPlant(event: { instanceId?: number | null; stopPropagation: () => void; sourceEvent?: MouseEvent | PointerEvent }) {
+    event.stopPropagation();
+    if (event.instanceId == null) return;
+    const plant = plants[event.instanceId];
+    if (!plant) return;
+    const sourceEvent = event.sourceEvent;
+    onPlantSelect?.(plant.id, sourceEvent ? { x: sourceEvent.clientX, y: sourceEvent.clientY } : undefined);
+  }
 
   useLayoutEffect(() => {
     const stems = stemsRef.current;
@@ -205,26 +224,47 @@ function InstancedPlants({ plants, rows, cols, mode, showActualRiskOverlay = fal
   }, [cols, dummy, mode, plants, rows, showActualRiskOverlay]);
 
   const targets = plants.filter((plant) => plant.isCurrentTarget);
+  const selectedPlants = selectedPlantId ? plants.filter((plant) => plant.id === selectedPlantId) : [];
 
   return (
     <group>
-      <instancedMesh ref={shadowsRef} args={[undefined, undefined, plants.length]}>
+      <instancedMesh
+        ref={shadowsRef}
+        args={[undefined, undefined, plants.length]}
+        onClick={selectPlant}
+      >
         <circleGeometry args={[0.13, 10]} />
         <meshBasicMaterial color="#2F271D" transparent opacity={0.2} depthWrite={false} />
       </instancedMesh>
-      <instancedMesh ref={overlaysRef} args={[undefined, undefined, plants.length]}>
+      <instancedMesh
+        ref={overlaysRef}
+        args={[undefined, undefined, plants.length]}
+        onClick={selectPlant}
+      >
         <circleGeometry args={[0.15, 12]} />
         <meshBasicMaterial color="#FFFFFF" transparent opacity={0.42} depthWrite={false} toneMapped={false} />
       </instancedMesh>
-      <instancedMesh ref={stemsRef} args={[undefined, undefined, plants.length]}>
+      <instancedMesh
+        ref={stemsRef}
+        args={[undefined, undefined, plants.length]}
+        onClick={selectPlant}
+      >
         <cylinderGeometry args={[0.022, 0.03, 0.25, 5]} />
         <meshBasicMaterial color="#FFFFFF" toneMapped={false} />
       </instancedMesh>
-      <instancedMesh ref={leavesARef} args={[undefined, undefined, plants.length]}>
+      <instancedMesh
+        ref={leavesARef}
+        args={[undefined, undefined, plants.length]}
+        onClick={selectPlant}
+      >
         <sphereGeometry args={[1, 6, 4]} />
         <meshBasicMaterial color="#FFFFFF" toneMapped={false} />
       </instancedMesh>
-      <instancedMesh ref={leavesBRef} args={[undefined, undefined, plants.length]}>
+      <instancedMesh
+        ref={leavesBRef}
+        args={[undefined, undefined, plants.length]}
+        onClick={selectPlant}
+      >
         <sphereGeometry args={[1, 6, 4]} />
         <meshBasicMaterial color="#FFFFFF" toneMapped={false} />
       </instancedMesh>
@@ -234,6 +274,15 @@ function InstancedPlants({ plants, rows, cols, mode, showActualRiskOverlay = fal
           <mesh key={plant.id} position={[x, 0.075, z]} rotation={[-Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.18, 0.022, 6, 18]} />
             <meshBasicMaterial color="#D97706" />
+          </mesh>
+        );
+      })}
+      {selectedPlants.map((plant) => {
+        const [x, z] = getGridPosition(plant.row, plant.col, rows, cols);
+        return (
+          <mesh key={`${plant.id}-selected`} position={[x, 0.08, z]} rotation={[-Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.22, 0.022, 6, 20]} />
+            <meshBasicMaterial color="#2E7D32" />
           </mesh>
         );
       })}
@@ -276,7 +325,18 @@ function Rover({ robot, rows, cols }: { robot: Robot; rows: number; cols: number
   );
 }
 
-function Scene({ plants, robots = [], rows, cols, mode, showActualRiskOverlay, interactive = true, controlsRef }: GreenhouseScene3DProps & { controlsRef: MutableRefObject<CameraControlApi | null> }) {
+function Scene({
+  plants,
+  robots = [],
+  rows,
+  cols,
+  mode,
+  showActualRiskOverlay,
+  interactive = true,
+  selectedPlantId,
+  onPlantSelect,
+  controlsRef,
+}: GreenhouseScene3DProps & { controlsRef: MutableRefObject<CameraControlApi | null> }) {
   return (
     <>
       <color attach="background" args={[mode === "real" ? "#8A7655" : "#EEF3F0"]} />
@@ -285,7 +345,15 @@ function Scene({ plants, robots = [], rows, cols, mode, showActualRiskOverlay, i
       <directionalLight position={[6, 10, 8]} intensity={1.55} color="#FFFDF4" />
       <directionalLight position={[-5, 5, -4]} intensity={0.45} color="#D9E8DD" />
       <GreenhouseBeds rows={rows} cols={cols} mode={mode} />
-      <InstancedPlants plants={plants} rows={rows} cols={cols} mode={mode} showActualRiskOverlay={showActualRiskOverlay} />
+      <InstancedPlants
+        plants={plants}
+        rows={rows}
+        cols={cols}
+        mode={mode}
+        showActualRiskOverlay={showActualRiskOverlay}
+        selectedPlantId={selectedPlantId}
+        onPlantSelect={onPlantSelect}
+      />
       {mode === "real" && robots.map((robot) => <Rover key={robot.id} robot={robot} rows={rows} cols={cols} />)}
     </>
   );
