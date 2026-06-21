@@ -1,32 +1,28 @@
-import { FiEye, FiPause, FiPlay, FiRefreshCw, FiRepeat } from "react-icons/fi";
+import { FiEye, FiRepeat } from "react-icons/fi";
 
 interface SimulationToolbarProps {
   showActualRiskOverlay: boolean;
   onToggleActualRiskOverlay: () => void;
-  onReset: () => void;
-  onRunAgentStep: () => void;
   onToggleAutoRun: () => void;
-  agentRunStatus: "idle" | "planning" | "moving" | "processing" | "complete";
+  onSetAutoRunSpeed: (speed: 1 | 2 | 4 | 8) => void;
   isAutoRunning: boolean;
+  autoRunSpeed: 1 | 2 | 4 | 8;
 }
 
 export function SimulationToolbar({
   showActualRiskOverlay,
   onToggleActualRiskOverlay,
-  onReset,
-  onRunAgentStep,
   onToggleAutoRun,
-  agentRunStatus,
+  onSetAutoRunSpeed,
   isAutoRunning,
+  autoRunSpeed,
 }: SimulationToolbarProps) {
-  const isRunning = agentRunStatus === "moving" || agentRunStatus === "processing";
-  const runLabel = agentRunStatus === "moving"
-    ? "Robot moving..."
-    : agentRunStatus === "processing"
-      ? "Processing..."
-      : agentRunStatus === "complete"
-        ? "Scouting complete"
-        : "Run One Step";
+  const speedOptions: Array<{ speed: 1 | 2 | 4 | 8; label: string }> = [
+    { speed: 1, label: "1x" },
+    { speed: 2, label: "2x" },
+    { speed: 4, label: "4x" },
+    // { speed: 8, label: "8x" },
+  ];
 
   return (
     <section aria-label="Simulation controls" className="flex shrink-0 flex-col gap-3 rounded-xl border border-[#DDE5D8] bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -34,28 +30,28 @@ export function SimulationToolbar({
         <button
           type="button"
           onClick={onToggleAutoRun}
-          className="flex min-w-[170px] items-center justify-center gap-2 rounded-xl border border-[#2E7D32] bg-[#2E7D32] px-5 py-3 text-sm font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-4 py-2 text-sm font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FiRepeat aria-hidden="true" />
           {isAutoRunning ? "Stop Auto Run" : "Auto Run"}
         </button>
-        {/* <button
-          type="button"
-          onClick={onRunAgentStep}
-          disabled={isRunning || isAutoRunning || agentRunStatus === "complete"}
-          className="flex items-center gap-2 rounded-lg border border-[#BFD6BA] bg-[#EAF5EA] px-3 py-2 text-xs font-medium text-[#2E7D32] hover:bg-[#DDEEDD] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <FiPlay aria-hidden="true" />
-          {runLabel}
-        </button>
-        <button type="button" className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#39463E]">
-          <FiPause aria-hidden="true" />
-          Pause
-        </button>
-        <button type="button" onClick={onReset} className="flex items-center gap-2 rounded-lg border border-[#CCD6C8] bg-white px-3 py-2 text-xs font-medium text-[#667065]">
-          <FiRefreshCw aria-hidden="true" />
-          Reset
-        </button> */}
+        <div className="flex items-center gap-1 rounded-lg border border-[#DDE5D8] bg-[#F8FAF5] p-1">
+          {speedOptions.map((option) => (
+            <button
+              key={option.speed}
+              type="button"
+              onClick={() => onSetAutoRunSpeed(option.speed)}
+              aria-pressed={autoRunSpeed === option.speed}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                autoRunSpeed === option.speed
+                  ? "bg-[#2E7D32] text-white"
+                  : "text-[#526055] hover:bg-white"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
       <button
         type="button"

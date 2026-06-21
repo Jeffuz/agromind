@@ -15,12 +15,21 @@ export const defaultEnvironment: EnvironmentParams = {
 };
 
 let autoRunTimer: number | undefined;
+const autoRunDelays = {
+  idle: 200,
+  moving: 125,
+  processing: 850,
+} as const;
 
 function clearAutoRunTimer() {
   if (autoRunTimer !== undefined) {
     window.clearTimeout(autoRunTimer);
     autoRunTimer = undefined;
   }
+}
+
+function getAutoRunDelay(baseDelay: number, speed: 1 | 2 | 4 | 8) {
+  return Math.max(35, Math.round(baseDelay / speed));
 }
 
 function scheduleAutoRunTick(delay: number) {
@@ -62,6 +71,7 @@ const createInitialState = (): SimulationState => ({
   showActualRiskOverlay: false,
   agentRunStatus: "idle",
   isAutoRunning: false,
+  autoRunSpeed: 1,
   activeRobotId: undefined,
   activeTargetPlantId: undefined,
   activePath: [],
@@ -79,6 +89,7 @@ interface SimulationActions {
   applyScenario: (scenario: ScenarioPreset) => void;
   generateSimulation: () => void;
   toggleActualRiskOverlay: () => void;
+  setAutoRunSpeed: (autoRunSpeed: 1 | 2 | 4 | 8) => void;
   resetSimulation: () => void;
   selectPlant: (plantId: string) => void;
   clearSelectedPlant: () => void;
@@ -136,6 +147,22 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   toggleActualRiskOverlay: () => set((current) => ({
     showActualRiskOverlay: !current.showActualRiskOverlay,
   })),
+  setAutoRunSpeed: (autoRunSpeed) => {
+    const current = get();
+    set({ autoRunSpeed });
+
+    if (current.isAutoRunning) {
+      scheduleAutoRunTick(
+        current.agentRunStatus === "idle"
+          ? getAutoRunDelay(autoRunDelays.idle, autoRunSpeed)
+          : current.agentRunStatus === "moving"
+            ? getAutoRunDelay(autoRunDelays.moving, autoRunSpeed)
+            : current.agentRunStatus === "processing"
+              ? getAutoRunDelay(autoRunDelays.processing, autoRunSpeed)
+              : 0,
+      );
+    }
+  },
   resetSimulation: () => {
     clearAutoRunTimer();
     set(createInitialState());
@@ -146,7 +173,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     const current = get();
     if (current.isAutoRunning) return;
     set({ isAutoRunning: true });
-    scheduleAutoRunTick(current.agentRunStatus === "idle" ? 200 : 0);
+    scheduleAutoRunTick(
+      current.agentRunStatus === "idle"
+        ? getAutoRunDelay(autoRunDelays.idle, current.autoRunSpeed)
+        : 0,
+    );
   },
   stopAutoRun: () => {
     clearAutoRunTimer();
@@ -161,7 +192,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     }
 
     set({ isAutoRunning: true });
-    scheduleAutoRunTick(current.agentRunStatus === "idle" ? 200 : 0);
+    scheduleAutoRunTick(
+      current.agentRunStatus === "idle"
+        ? getAutoRunDelay(autoRunDelays.idle, current.autoRunSpeed)
+        : 0,
+    );
   },
   inspectSelectedPlant: () => {
     const current = get();
@@ -294,7 +329,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     });
 
     if (current.isAutoRunning) {
-      scheduleAutoRunTick(path.length > 0 ? 125 : 850);
+      scheduleAutoRunTick(
+        path.length > 0
+          ? getAutoRunDelay(autoRunDelays.moving, current.autoRunSpeed)
+          : getAutoRunDelay(autoRunDelays.processing, current.autoRunSpeed),
+      );
     }
   },
   advanceRobotAlongPath: () => {
@@ -353,7 +392,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     });
 
     if (current.isAutoRunning) {
-      scheduleAutoRunTick(isLastStep ? 850 : 125);
+      scheduleAutoRunTick(
+        isLastStep
+          ? getAutoRunDelay(autoRunDelays.processing, current.autoRunSpeed)
+          : getAutoRunDelay(autoRunDelays.moving, current.autoRunSpeed),
+      );
     }
   },
   completeAgentInspection: () => {
@@ -439,7 +482,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
 
     if (remainingUninspected) {
       if (current.isAutoRunning) {
-        scheduleAutoRunTick(200);
+        scheduleAutoRunTick(getAutoRunDelay(autoRunDelays.idle, current.autoRunSpeed));
       }
     } else {
       clearAutoRunTimer();
@@ -468,6 +511,7 @@ export const simulationActions = {
   applyScenario: (scenario: ScenarioPreset) => useSimulationStore.getState().applyScenario(scenario),
   generateSimulation: () => useSimulationStore.getState().generateSimulation(),
   toggleActualRiskOverlay: () => useSimulationStore.getState().toggleActualRiskOverlay(),
+  setAutoRunSpeed: (autoRunSpeed: 1 | 2 | 4 | 8) => useSimulationStore.getState().setAutoRunSpeed(autoRunSpeed),
   resetSimulation: () => useSimulationStore.getState().resetSimulation(),
   selectPlant: (plantId: string) => useSimulationStore.getState().selectPlant(plantId),
   clearSelectedPlant: () => useSimulationStore.getState().clearSelectedPlant(),

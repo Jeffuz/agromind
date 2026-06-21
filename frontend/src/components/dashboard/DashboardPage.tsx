@@ -26,6 +26,7 @@ export function DashboardPage() {
   const showActualRiskOverlay = useSimulationStore((simulation) => simulation.showActualRiskOverlay);
   const agentRunStatus = useSimulationStore((simulation) => simulation.agentRunStatus);
   const isAutoRunning = useSimulationStore((simulation) => simulation.isAutoRunning);
+  const autoRunSpeed = useSimulationStore((simulation) => simulation.autoRunSpeed);
   const selectedPlantId = useSimulationStore((simulation) => simulation.selectedPlantId);
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId);
 
@@ -50,10 +51,10 @@ export function DashboardPage() {
           showActualRiskOverlay={showActualRiskOverlay}
           onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
           onReset={simulationActions.resetSimulation}
-          onRunAgentStep={simulationActions.runAgentStep}
           onToggleAutoRun={simulationActions.toggleAutoRun}
-          agentRunStatus={agentRunStatus}
+          onSetAutoRunSpeed={simulationActions.setAutoRunSpeed}
           isAutoRunning={isAutoRunning}
+          autoRunSpeed={autoRunSpeed}
         />
         <div className="relative grid min-h-0 gap-3 lg:grid-cols-2 xl:flex-1">
           <FarmMap

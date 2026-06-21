@@ -84,6 +84,7 @@ export type SimulationState = {
   showActualRiskOverlay: boolean;
   agentRunStatus: AgentRunStatus;
   isAutoRunning: boolean;
+  autoRunSpeed: 1 | 2 | 4 | 8;
   activeRobotId?: string;
   activeTargetPlantId?: string;
   activePath: GridPosition[];
