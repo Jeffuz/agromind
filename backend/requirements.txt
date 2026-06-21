@@ -1,3 +1,6 @@
 fastapi
 uvicorn[standard]
 numpy
+tensorflow>=2.18,<2.22
+pillow>=10,<13
+python-multipart>=0.0.9,<1

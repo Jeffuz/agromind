@@ -1,7 +1,10 @@
-from fastapi import FastAPI, HTTPException, Query
+from typing import Annotated
+
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 import farm
+from cv_service import ModelUnavailableError, model_status, predict_image
 from farm import GRID_SIZE, TRUE_GRID
 from mdp import value_iteration, follow_policy, ACTIONS
 
@@ -13,6 +16,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+
+# ---------------------------------------------------------------------------
+# Computer vision
+# ---------------------------------------------------------------------------
+
+@app.get("/cv/health")
+def cv_health():
+    """Verify that the packaged tomato classifier can be loaded."""
+    try:
+        return model_status()
+    except ModelUnavailableError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+
+@app.post("/cv/predict")
+async def cv_predict(
+    file: Annotated[UploadFile, File()],
+    plantId: Annotated[str | None, Form()] = None,
+):
+    """Classify one tomato leaf image without changing simulation state."""
+    image_bytes = await _read_image(file)
+    try:
+        return predict_image(image_bytes, plantId)
+    except ModelUnavailableError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +107,38 @@ def visit_plant(
     }
 
 
+@app.post("/farm/visit/image")
+async def visit_plant_with_image(
+    file: Annotated[UploadFile, File()],
+    row: int = Query(..., ge=0, lt=GRID_SIZE),
+    col: int = Query(..., ge=0, lt=GRID_SIZE),
+    plantId: Annotated[str | None, Form()] = None,
+):
+    """Classify a robot image, store its risk proxy, and update the route recommendation."""
+    image_bytes = await _read_image(file)
+    resolved_plant_id = plantId or f"plant_{row}_{col}"
+    try:
+        cv_result = predict_image(image_bytes, resolved_plant_id)
+    except ModelUnavailableError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    already_visited = farm.observed[row][col] is not None
+    farm.record_observation(row, col, float(cv_result["severity"]))
+    effective_grid = farm.get_effective_grid()
+    values, policy = value_iteration(effective_grid)
+    return {
+        "visited": (row, col),
+        "cv": cv_result,
+        "score": cv_result["severity"],
+        "scoreMeaning": "simulation disease-risk proxy",
+        "already_visited": already_visited,
+        "next_recommended": _best_next(row, col, policy, values),
+        "all_done": farm.all_visited(),
+    }
+
+
 # ---------------------------------------------------------------------------
 # MDP endpoints
 # ---------------------------------------------------------------------------
@@ -127,13 +192,21 @@ def get_path(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+async def _read_image(file: UploadFile) -> bytes:
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=415, detail="Upload must be an image.")
+    image_bytes = await file.read(MAX_IMAGE_BYTES + 1)
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds the 10 MB limit.")
+    return image_bytes
+
 def _best_next(row: int, col: int, policy, V) -> dict | None:
     """
     Pick the best adjacent unvisited cell by V-value.
     Falls back to the policy action if all neighbours are already visited.
     """
-    import numpy as np
-
     unvisited_neighbours = []
     for action, (dr, dc) in ACTIONS.items():
         nr, nc = row + dr, col + dc
