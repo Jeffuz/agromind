@@ -4,10 +4,10 @@ interface MapLegendProps {
 }
 
 const riskItems = [
-  { label: "Low risk", color: "bg-green-200" },
-  { label: "Medium risk", color: "bg-yellow-300" },
-  { label: "High risk", color: "bg-orange-300" },
-  { label: "Very high risk", color: "bg-[#D98A77]" },
+  { label: "Low disease pressure", color: "bg-green-200" },
+  { label: "Medium disease pressure", color: "bg-yellow-300" },
+  { label: "High disease pressure", color: "bg-orange-300" },
+  { label: "Very high disease pressure", color: "bg-[#D98A77]" },
 ];
 
 export function MapLegend({ variant = "real", showActualRiskOverlay = false }: MapLegendProps) {
@@ -15,13 +15,15 @@ export function MapLegend({ variant = "real", showActualRiskOverlay = false }: M
     ? [
         { label: "Unknown", color: "bg-[#E4E8E1]" },
         { label: "Inspected", color: "bg-[#D5E8D8]" },
-        ...riskItems.slice(0, 3).map((item) => ({ ...item, label: item.label.replace("risk", "belief risk") })),
+        { label: "Low belief pressure", color: "bg-green-200" },
+        { label: "Medium belief pressure", color: "bg-yellow-300" },
+        { label: "High belief pressure", color: "bg-orange-300" },
         { label: "Current target", color: "border-2 border-amber-600 bg-white" },
       ]
     : [
-        { label: "Crop tile", color: "border border-[#968E73] bg-[#AFA486] shadow-inner" },
-        { label: "Robot", color: "bg-white ring-1 ring-[#718078]" },
-        { label: showActualRiskOverlay ? "Ground truth revealed" : "Ground truth hidden", color: "border border-dashed border-[#8B9788] bg-transparent" },
+        // { label: "Crop tile", color: "border border-[#968E73] bg-[#AFA486] shadow-inner" },
+        // { label: "Robot", color: "bg-white ring-1 ring-[#718078]" },
+        // { label: showActualRiskOverlay ? "Ground truth revealed" : "Ground truth hidden", color: "border border-dashed border-[#8B9788] bg-transparent" },
         ...riskItems,
       ];
 

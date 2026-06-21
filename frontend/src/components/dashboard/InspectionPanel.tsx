@@ -44,8 +44,11 @@ export function InspectionPanel({ plant, showActualRiskOverlay, onInspect, canIn
           <p>Inspected at tick: {plant.inspectedAtTick != null ? plant.inspectedAtTick : "N/A"}</p>
           {showActualRiskOverlay && (
             <>
-              <p>Actual risk: {Math.round(plant.actualRisk * 100)}%</p>
-              <p>True label: {plant.trueLabel.replaceAll("_", " ")}</p>
+              <p>Disease pressure: {Math.round(plant.actualRisk * 100)}%</p>
+              <p>Disease class: {plant.trueLabel.replaceAll("_", " ")}</p>
+              <p className="pt-1 text-[10px] leading-4 text-[#758074]">
+                Disease pressure controls urgency; disease class controls the image/CV label.
+              </p>
             </>
           )}
         </div>
