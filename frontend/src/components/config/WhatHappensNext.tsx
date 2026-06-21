@@ -8,15 +8,25 @@ const steps = [
 
 export function WhatHappensNext() {
   return (
-    <Card className="overflow-hidden" title="What Happens Next?">
-      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-        {steps.map((step) => (
-          <div key={step.number} className="border-l border-[#BFD6BA] pl-3">
-            <span className="text-[10px] font-bold text-[#2E7D32]">{step.number}</span>
-            <h3 className="mt-2 text-sm font-medium leading-5 text-[#1F2A24]">{step.title}</h3>
-            <p className="mt-1 text-[11px] leading-4 text-[#667065]">{step.description}</p>
-          </div>
-        ))}
+    <Card className="h-full overflow-hidden" title="What Happens Next?">
+      <div className="relative">
+        <div className="absolute left-4 top-3 bottom-3 w-px bg-[#DDE5D8]" aria-hidden="true" />
+        <div className="grid gap-2.5">
+          {steps.map((step, index) => (
+            <div key={step.number} className="relative pl-11">
+              <span className="absolute left-0 top-0 flex size-8 items-center justify-center rounded-full border border-[#BFD6BA] bg-[#EAF5EA] text-[11px] font-semibold text-[#2E7D32] shadow-sm">
+                {step.number}
+              </span>
+              {index < steps.length - 1 && (
+                <span className="absolute left-4 top-8 h-[calc(100%+0.4rem)] w-px bg-[#DDE5D8]" aria-hidden="true" />
+              )}
+              <div className="rounded-lg border border-[#E3E8DD] bg-[#FBFCF8] px-3 py-2">
+                <h3 className="text-sm font-medium leading-5 text-[#1F2A24]">{step.title}</h3>
+                <p className="mt-0.5 text-[11px] leading-4 text-[#667065]">{step.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   );

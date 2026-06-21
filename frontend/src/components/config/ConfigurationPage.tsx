@@ -39,7 +39,7 @@ export function ConfigurationPage() {
         </div>
 
         <div className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
-          <div className="grid content-start gap-4 lg:grid-rows-[auto_auto_auto]">
+          <div className="grid min-h-0 gap-4 lg:grid-rows-[auto_auto_minmax(0,1fr)]">
             <QuickStartScenarios />
             <ConditionAdjuster />
             <WhatHappensNext />
