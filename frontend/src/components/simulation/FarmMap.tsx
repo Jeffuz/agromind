@@ -1,7 +1,14 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import { Card } from "@/components/layout/Card";
 import type { Plant, Robot } from "@/lib/types";
 import { MapLegend } from "./MapLegend";
-import { PlantCell } from "./PlantCell";
+
+const GreenhouseScene3D = dynamic(
+  () => import("./GreenhouseScene3D").then((module) => module.GreenhouseScene3D),
+  { ssr: false, loading: () => <p className="text-sm text-[#667065]">Loading greenhouse view…</p> },
+);
 
 interface FarmMapProps {
   title?: string;
@@ -17,35 +24,33 @@ interface FarmMapProps {
 export function FarmMap({
   title = "Simulation Preview",
   subtitle = "Hidden ground-truth risk preview. The robot will start without access to this map.",
-  placeholder = "Farm map preview placeholder",
+  placeholder = "No greenhouse generated yet.",
   plants = [],
   robots = [],
   rows = 0,
   cols = 0,
   showActualRiskOverlay = false,
 }: FarmMapProps) {
-  const robotLocations = new Set(robots.map((robot) => `${robot.row}-${robot.col}`));
+  const hasGreenhouse = plants.length > 0 && rows > 0 && cols > 0;
 
   return (
     <Card className="flex h-full min-h-[300px] flex-col overflow-hidden xl:min-h-0" title={title} subtitle={subtitle}>
       <div className="flex h-full min-h-0 flex-col">
-        <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-auto rounded-lg border border-[#CFC9B4] bg-[#E8E5D8] p-3 shadow-inner">
-          {plants.length > 0 && rows > 0 && cols > 0 ? (
-            <div
-              aria-label={`${rows} by ${cols} real greenhouse grid`}
-              className="grid w-full min-w-[620px] max-w-5xl gap-x-[2px] gap-y-[3px] rounded-md bg-[#C9C3AD] p-1.5 shadow-[inset_0_0_0_1px_rgba(112,103,79,0.16)] lg:min-w-0"
-              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-            >
-              {plants.map((plant) => (
-                <PlantCell
-                  key={plant.id}
-                  plant={plant}
-                  variant="real"
-                  showActualRiskOverlay={showActualRiskOverlay}
-                  hasRobot={robotLocations.has(`${plant.row}-${plant.col}`)}
-                />
-              ))}
-            </div>
+        <div className="relative flex min-h-[220px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-[#756346] bg-[#8A7655]">
+          {hasGreenhouse ? (
+            <>
+              <GreenhouseScene3D
+                plants={plants}
+                robots={robots}
+                rows={rows}
+                cols={cols}
+                mode="real"
+                showActualRiskOverlay={showActualRiskOverlay}
+              />
+              <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-white/80 px-2 py-1 text-[10px] text-[#667065] shadow-sm">
+                Drag to rotate · Shift-drag to pan · Scroll to zoom
+              </span>
+            </>
           ) : (
             <p className="text-sm font-medium text-[#667065]">{placeholder}</p>
           )}
