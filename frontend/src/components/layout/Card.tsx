@@ -10,7 +10,7 @@ interface CardProps {
 
 export function Card({ title, subtitle, action, children, className = "" }: CardProps) {
   return (
-    <section className={`rounded-xl border border-[#DDE5D8] bg-white p-4 shadow-sm ${className}`}>
+    <section className={`flex min-h-0 flex-col rounded-xl border border-[#DDE5D8] bg-white p-4 shadow-sm ${className}`}>
       {(title || subtitle || action) && (
         <div className="mb-3 flex items-start justify-between gap-4">
           <div>

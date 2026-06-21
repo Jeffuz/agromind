@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { FiX } from "react-icons/fi";
 import { BeliefMap } from "@/components/simulation/BeliefMap";
 import { FarmMap } from "@/components/simulation/FarmMap";
 import { SimulationToolbar } from "@/components/simulation/SimulationToolbar";
 import { simulationActions, useSimulationStore } from "@/store/simulationStore";
 import { AgentLog } from "./AgentLog";
+import { InspectionPanel } from "./InspectionPanel";
 import { MetricsPanel } from "./MetricsPanel";
 import { RecommendationPanel } from "./RecommendationPanel";
 import { SensorDataPanel } from "./SensorDataPanel";
@@ -102,32 +102,13 @@ export function DashboardPage() {
                   </button>
                 </div>
 
-                <div className="grid gap-3 p-4">
-                  <div className="overflow-hidden rounded-lg border border-[#DDE5D8] bg-[#F7F9F4]">
-                    {selectedPlant.imageUrl ? (
-                      <Image
-                        src={selectedPlant.imageUrl}
-                        alt={`Captured tomato image for ${selectedPlant.id}`}
-                        width={480}
-                        height={270}
-                        className="h-36 w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-36 items-center justify-center text-xs text-[#667065]">No image available.</div>
-                    )}
-                  </div>
-
-                  <div className="grid gap-1 text-xs leading-5 text-[#667065]">
-                    <p>CV prediction: {selectedPlant.cvPrediction ? selectedPlant.cvPrediction.replaceAll("_", " ") : "CV not run yet"}</p>
-                    <p>Confidence: {selectedPlant.cvConfidence != null ? `${Math.round(selectedPlant.cvConfidence * 100)}%` : "N/A"}</p>
-                    <p>Inspected at tick: {selectedPlant.inspectedAtTick != null ? selectedPlant.inspectedAtTick : "N/A"}</p>
-                    {showActualRiskOverlay && (
-                      <>
-                        <p>Actual risk: {Math.round(selectedPlant.actualRisk * 100)}%</p>
-                        <p>True label: {selectedPlant.trueLabel.replaceAll("_", " ")}</p>
-                      </>
-                    )}
-                  </div>
+                <div className="p-4">
+                  <InspectionPanel
+                    plant={selectedPlant}
+                    showActualRiskOverlay={showActualRiskOverlay}
+                    onInspect={simulationActions.inspectSelectedPlant}
+                    canInspect={Boolean(selectedPlant.imageUrl)}
+                  />
                 </div>
               </div>
             </div>
