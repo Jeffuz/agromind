@@ -5,6 +5,7 @@ interface SimulationToolbarProps {
   onToggleActualRiskOverlay: () => void;
   onToggleAutoRun: () => void;
   onSetAutoRunSpeed: (speed: 1 | 2 | 4 | 8) => void;
+  agentRunStatus: "idle" | "planning" | "moving" | "processing" | "complete";
   isAutoRunning: boolean;
   autoRunSpeed: 1 | 2 | 4 | 8;
 }
@@ -14,6 +15,7 @@ export function SimulationToolbar({
   onToggleActualRiskOverlay,
   onToggleAutoRun,
   onSetAutoRunSpeed,
+  agentRunStatus,
   isAutoRunning,
   autoRunSpeed,
 }: SimulationToolbarProps) {
@@ -30,10 +32,15 @@ export function SimulationToolbar({
         <button
           type="button"
           onClick={onToggleAutoRun}
+          disabled={agentRunStatus === "complete" && !isAutoRunning}
           className="flex items-center justify-center gap-2 rounded-lg border border-[#2E7D32] bg-[#2E7D32] px-4 py-2 text-sm font-semibold text-white hover:bg-[#256629] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <FiRepeat aria-hidden="true" />
-          {isAutoRunning ? "Stop Auto Run" : "Auto Run"}
+          {agentRunStatus === "complete" && !isAutoRunning
+            ? "Scouting complete"
+            : isAutoRunning
+              ? "Stop Auto Run"
+              : "Auto Run"}
         </button>
         <div className="flex items-center gap-1 rounded-lg border border-[#DDE5D8] bg-[#F8FAF5] p-1">
           {speedOptions.map((option) => (

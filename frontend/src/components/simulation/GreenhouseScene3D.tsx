@@ -119,10 +119,10 @@ function getBedSize(rows: number, cols: number) {
 }
 
 function getHeatmapColor(risk: number) {
-  if (risk < 0.3) return [89, 179, 101];
-  if (risk < 0.55) return [223, 194, 77];
-  if (risk < 0.78) return [232, 140, 62];
-  return [215, 77, 68];
+  if (risk < 0.28) return [99, 181, 109];
+  if (risk < 0.5) return [228, 201, 88];
+  if (risk < 0.72) return [236, 152, 70];
+  return [218, 84, 68];
 }
 
 function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProps, "plants" | "rows" | "cols">) {
@@ -156,16 +156,19 @@ function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProp
         const normalizedY = 1 - ((z + halfDepth) / depth);
         const centerX = normalizedX * heatmap.canvas.width;
         const centerY = normalizedY * heatmap.canvas.height;
-        const intensity = Math.max(0.08, Math.min(0.95, plant.beliefRisk));
+        const risk = Math.max(0, Math.min(1, plant.beliefRisk));
+        const intensity = Math.max(0, (risk - 0.18) / 0.82);
         const [red, green, blue] = getHeatmapColor(plant.beliefRisk);
-        const coreAlpha = 0.08 + intensity * 0.26;
-        const haloAlpha = 0.02 + intensity * 0.14;
-        const radius = Math.max(heatmap.canvas.width, heatmap.canvas.height) * (0.06 + intensity * 0.12);
-        const haloRadius = radius * 2.1;
+        if (intensity <= 0.02) return;
+
+        const coreAlpha = 0.03 + intensity * 0.28;
+        const haloAlpha = 0.01 + intensity * 0.12;
+        const radius = Math.max(heatmap.canvas.width, heatmap.canvas.height) * (0.035 + intensity * 0.075);
+        const haloRadius = radius * 2.4;
 
         const halo = context.createRadialGradient(centerX, centerY, radius * 0.25, centerX, centerY, haloRadius);
         halo.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${haloAlpha})`);
-        halo.addColorStop(0.55, `rgba(${red}, ${green}, ${blue}, ${Math.max(haloAlpha * 0.45, 0.015)})`);
+        halo.addColorStop(0.55, `rgba(${red}, ${green}, ${blue}, ${Math.max(haloAlpha * 0.4, 0.012)})`);
         halo.addColorStop(1, "rgba(0, 0, 0, 0)");
         context.fillStyle = halo;
         context.beginPath();
@@ -174,7 +177,7 @@ function BeliefHeatmapOverlay({ plants, rows, cols }: Pick<GreenhouseScene3DProp
 
         const core = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
         core.addColorStop(0, `rgba(${red}, ${green}, ${blue}, ${coreAlpha})`);
-        core.addColorStop(0.65, `rgba(${red}, ${green}, ${blue}, ${Math.max(coreAlpha * 0.5, 0.02)})`);
+        core.addColorStop(0.65, `rgba(${red}, ${green}, ${blue}, ${Math.max(coreAlpha * 0.45, 0.015)})`);
         core.addColorStop(1, "rgba(0, 0, 0, 0)");
         context.fillStyle = core;
         context.beginPath();

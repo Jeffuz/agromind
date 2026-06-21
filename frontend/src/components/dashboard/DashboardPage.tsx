@@ -52,6 +52,7 @@ export function DashboardPage() {
           onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
           onToggleAutoRun={simulationActions.toggleAutoRun}
           onSetAutoRunSpeed={simulationActions.setAutoRunSpeed}
+          agentRunStatus={agentRunStatus}
           isAutoRunning={isAutoRunning}
           autoRunSpeed={autoRunSpeed}
         />
