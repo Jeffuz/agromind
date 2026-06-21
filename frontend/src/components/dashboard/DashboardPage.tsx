@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiX } from "react-icons/fi";
 import { BeliefMap } from "@/components/simulation/BeliefMap";
@@ -24,8 +24,31 @@ export function DashboardPage() {
   const agentLogs = useSimulationStore((simulation) => simulation.agentLogs);
   const recommendation = useSimulationStore((simulation) => simulation.recommendation);
   const showActualRiskOverlay = useSimulationStore((simulation) => simulation.showActualRiskOverlay);
+  const agentRunStatus = useSimulationStore((simulation) => simulation.agentRunStatus);
+  const activePathIndex = useSimulationStore((simulation) => simulation.activePathIndex);
+  const activePathLength = useSimulationStore((simulation) => simulation.activePath.length);
   const selectedPlantId = useSimulationStore((simulation) => simulation.selectedPlantId);
   const selectedPlant = plants.find((plant) => plant.id === selectedPlantId);
+
+  useEffect(() => {
+    if (agentRunStatus === "moving") {
+      const timer = window.setTimeout(() => {
+        simulationActions.advanceRobotAlongPath();
+      }, 125);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    if (agentRunStatus === "processing") {
+      const timer = window.setTimeout(() => {
+        simulationActions.completeAgentInspection();
+      }, 850);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    return undefined;
+  }, [activePathIndex, activePathLength, agentRunStatus]);
 
   if (plants.length === 0) {
     return (
@@ -48,6 +71,8 @@ export function DashboardPage() {
           showActualRiskOverlay={showActualRiskOverlay}
           onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
           onReset={simulationActions.resetSimulation}
+          onRunAgentStep={simulationActions.runAgentStep}
+          agentRunStatus={agentRunStatus}
         />
         <div className="relative grid min-h-0 gap-3 lg:grid-cols-2 xl:flex-1">
           <FarmMap
@@ -107,7 +132,8 @@ export function DashboardPage() {
                     plant={selectedPlant}
                     showActualRiskOverlay={showActualRiskOverlay}
                     onInspect={simulationActions.inspectSelectedPlant}
-                    canInspect={Boolean(selectedPlant.imageUrl)}
+                    canInspect={Boolean(selectedPlant.imageUrl) && agentRunStatus === "idle"}
+                    agentRunStatus={agentRunStatus}
                   />
                 </div>
               </div>

@@ -2,9 +2,9 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { FiZoomIn, FiZoomOut } from "react-icons/fi";
-import { Color, InstancedMesh, Object3D, OrthographicCamera, Vector3 } from "three";
+import { Color, Group, InstancedMesh, Object3D, OrthographicCamera, Vector3 } from "three";
 import type { Plant, Robot } from "@/lib/types";
 
 interface GreenhouseScene3DProps {
@@ -291,9 +291,26 @@ function InstancedPlants({
 }
 
 function Rover({ robot, rows, cols }: { robot: Robot; rows: number; cols: number }) {
+  const groupRef = useRef<Group>(null);
+  const targetRef = useRef(new Vector3());
+  const initializedRef = useRef(false);
   const [x, z] = getGridPosition(robot.row, robot.col, rows, cols);
+
+  useEffect(() => {
+    targetRef.current.set(x, 0.18, z + 0.22);
+    if (!initializedRef.current && groupRef.current) {
+      groupRef.current.position.copy(targetRef.current);
+      initializedRef.current = true;
+    }
+  }, [x, z]);
+
+  useFrame(() => {
+    if (!groupRef.current) return;
+    groupRef.current.position.lerp(targetRef.current, 0.18);
+  });
+
   return (
-    <group position={[x, 0.18, z + 0.22]} scale={0.7}>
+    <group ref={groupRef} scale={0.7}>
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[0.17, 0.19, 0.09, 12]} />
         <meshStandardMaterial color="#3F5147" roughness={0.78} />

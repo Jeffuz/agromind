@@ -6,9 +6,10 @@ interface InspectionPanelProps {
   showActualRiskOverlay: boolean;
   onInspect?: () => void;
   canInspect?: boolean;
+  agentRunStatus?: "idle" | "planning" | "moving" | "processing" | "complete";
 }
 
-export function InspectionPanel({ plant, showActualRiskOverlay, onInspect, canInspect = true }: InspectionPanelProps) {
+export function InspectionPanel({ plant, showActualRiskOverlay, onInspect, canInspect = true, agentRunStatus = "idle" }: InspectionPanelProps) {
   return (
     !plant ? (
       <p className="text-sm leading-6 text-[#667065]">Select a plant in the Real Greenhouse to view captured evidence.</p>
@@ -42,6 +43,7 @@ export function InspectionPanel({ plant, showActualRiskOverlay, onInspect, canIn
           <p>CV prediction: {plant.cvPrediction ? plant.cvPrediction.replaceAll("_", " ") : "CV not run yet"}</p>
           <p>Confidence: {plant.cvConfidence != null ? `${Math.round(plant.cvConfidence * 100)}%` : "N/A"}</p>
           <p>Inspected at tick: {plant.inspectedAtTick != null ? plant.inspectedAtTick : "N/A"}</p>
+          {agentRunStatus === "processing" && <p>Robot is processing captured image...</p>}
           {showActualRiskOverlay && (
             <>
               <p>Disease pressure: {Math.round(plant.actualRisk * 100)}%</p>

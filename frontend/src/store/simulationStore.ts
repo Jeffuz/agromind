@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { generateGreenhouse } from "@/lib/diseaseMap";
 import { calculateBeliefRisk, mockClassifyPlantImage } from "@/lib/cvAdapter";
 import { calculateSimulationMetrics } from "@/lib/metrics";
+import { buildManhattanPath, scoreAgentTarget } from "@/lib/simulation";
 import type { EnvironmentParams, ScenarioPreset, SimulationState } from "@/lib/types";
 
 export const defaultEnvironment: EnvironmentParams = {
@@ -23,6 +24,11 @@ const createInitialState = (): SimulationState => ({
   plants: [],
   robots: [],
   showActualRiskOverlay: false,
+  agentRunStatus: "idle",
+  activeRobotId: undefined,
+  activeTargetPlantId: undefined,
+  activePath: [],
+  activePathIndex: 0,
   metrics: calculateSimulationMetrics([]),
   agentLogs: [],
   selectedPlantId: undefined,
@@ -40,6 +46,10 @@ interface SimulationActions {
   selectPlant: (plantId: string) => void;
   clearSelectedPlant: () => void;
   inspectSelectedPlant: () => void;
+  runAgentStep: () => void;
+  advanceRobotAlongPath: () => void;
+  completeAgentInspection: () => void;
+  cancelAgentRun: () => void;
 }
 
 type SimulationStore = SimulationState & SimulationActions;
@@ -59,6 +69,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       plants,
       robots,
       showActualRiskOverlay: false,
+      agentRunStatus: "idle",
+      activeRobotId: undefined,
+      activeTargetPlantId: undefined,
+      activePath: [],
+      activePathIndex: 0,
       metrics: calculateSimulationMetrics(plants),
       agentLogs: [
         {
@@ -139,6 +154,226 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
             },
     });
   },
+  runAgentStep: () => {
+    const current = get();
+    if (current.agentRunStatus === "moving" || current.agentRunStatus === "processing") return;
+
+    const robot = current.robots.find((item) => item.id === "robot-1") ?? current.robots[0];
+    if (!robot) return;
+
+    const uninspectedPlants = current.plants.filter((plant) => !plant.inspected);
+    if (uninspectedPlants.length === 0) {
+      set({
+        agentRunStatus: "complete",
+        activeRobotId: undefined,
+        activeTargetPlantId: undefined,
+        activePath: [],
+        activePathIndex: 0,
+        robots: current.robots.map((item) => ({ ...item, status: "idle", targetPlantId: undefined })),
+        plants: current.plants.map((plant) => ({ ...plant, isCurrentTarget: false })),
+        agentLogs: [
+          ...current.agentLogs,
+          {
+            id: `agent-complete-${current.tick}`,
+            tick: current.tick,
+            message: "All plants have been inspected. Scouting complete.",
+          },
+        ],
+      });
+      return;
+    }
+
+    const target = [...uninspectedPlants]
+      .map((plant) => ({
+        plant,
+        score: scoreAgentTarget(plant, current.plants, robot, current.rows, current.cols),
+      }))
+      .sort((left, right) => right.score - left.score)[0]?.plant;
+
+    if (!target) return;
+
+    const path = buildManhattanPath({ row: robot.row, col: robot.col }, { row: target.row, col: target.col });
+    const nextRobotStatus = path.length > 0 ? "moving" : "inspecting";
+
+    set({
+      agentRunStatus: path.length > 0 ? "moving" : "processing",
+      activeRobotId: robot.id,
+      activeTargetPlantId: target.id,
+      activePath: path,
+      activePathIndex: 0,
+      selectedPlantId: target.id,
+      robots: current.robots.map((item) => (
+        item.id === robot.id
+          ? { ...item, targetPlantId: target.id, status: nextRobotStatus }
+          : item
+      )),
+      plants: current.plants.map((plant) => ({
+        ...plant,
+        isCurrentTarget: plant.id === target.id,
+      })),
+      agentLogs: [
+        ...current.agentLogs,
+        {
+          id: `agent-plan-${target.id}-${current.tick}`,
+          tick: current.tick,
+          message: `Agent planned a route to ${target.id}.`,
+        },
+        {
+          id: `agent-move-${target.id}-${current.tick}`,
+          tick: current.tick,
+          message: "Robot moving to target plant.",
+        },
+      ],
+    });
+  },
+  advanceRobotAlongPath: () => {
+    const current = get();
+    if (current.agentRunStatus !== "moving") return;
+    const robotId = current.activeRobotId;
+    const targetPlantId = current.activeTargetPlantId;
+    if (!robotId || !targetPlantId) return;
+
+    const nextPosition = current.activePath[current.activePathIndex];
+    if (!nextPosition) {
+      set({
+        agentRunStatus: "processing",
+        robots: current.robots.map((item) => (
+          item.id === robotId ? { ...item, status: "inspecting", targetPlantId } : item
+        )),
+        agentLogs: [
+          ...current.agentLogs,
+          {
+            id: `agent-arrive-${targetPlantId}-${current.tick}`,
+            tick: current.tick,
+            message: `Robot arrived at ${targetPlantId} and is processing the captured image.`,
+          },
+        ],
+      });
+      return;
+    }
+
+    const nextIndex = current.activePathIndex + 1;
+    const isLastStep = nextIndex >= current.activePath.length;
+
+    set({
+      robots: current.robots.map((item) => (
+        item.id === robotId
+          ? {
+              ...item,
+              row: nextPosition.row,
+              col: nextPosition.col,
+              targetPlantId,
+              status: isLastStep ? "inspecting" : "moving",
+            }
+          : item
+      )),
+      activePathIndex: nextIndex,
+      agentRunStatus: isLastStep ? "processing" : "moving",
+      agentLogs: isLastStep
+        ? [
+            ...current.agentLogs,
+            {
+              id: `agent-arrive-${targetPlantId}-${current.tick}`,
+              tick: current.tick,
+              message: `Robot arrived at ${targetPlantId} and is processing the captured image.`,
+            },
+          ]
+        : current.agentLogs,
+    });
+  },
+  completeAgentInspection: () => {
+    const current = get();
+    if (current.agentRunStatus !== "processing") return;
+    const targetId = current.activeTargetPlantId;
+    const robotId = current.activeRobotId;
+    if (!targetId) return;
+
+    const selectedIndex = current.plants.findIndex((plant) => plant.id === targetId);
+    if (selectedIndex === -1) return;
+
+    const selectedPlant = current.plants[selectedIndex];
+    const { prediction, confidence } = mockClassifyPlantImage(selectedPlant);
+    const priorRisk = selectedPlant.inspected ? selectedPlant.beliefRisk : 0.3;
+    const beliefRisk = calculateBeliefRisk({ prediction, confidence, priorRisk });
+    const nextTick = current.tick + 1;
+    const updatedPlant = {
+      ...selectedPlant,
+      inspected: true,
+      inspectedAtTick: nextTick,
+      cvPrediction: prediction,
+      cvConfidence: confidence,
+      beliefLabel: prediction,
+      beliefRisk,
+      isCurrentTarget: false,
+    };
+    const updatedPlants = current.plants.map((plant, index) => (index === selectedIndex ? updatedPlant : { ...plant, isCurrentTarget: false }));
+    const confidencePercent = Math.round(confidence * 100);
+    const remainingUninspected = updatedPlants.some((plant) => !plant.inspected);
+
+    set({
+      tick: nextTick,
+      plants: updatedPlants,
+      robots: current.robots.map((item) => (
+        item.id === robotId
+          ? { ...item, status: "idle", targetPlantId: undefined }
+          : item
+      )),
+      metrics: calculateSimulationMetrics(updatedPlants),
+      selectedPlantId: targetId,
+      lastInspectedPlantId: targetId,
+      activeRobotId: undefined,
+      activeTargetPlantId: undefined,
+      activePath: [],
+      activePathIndex: 0,
+      agentRunStatus: remainingUninspected ? "idle" : "complete",
+      agentLogs: [
+        ...current.agentLogs,
+        {
+          id: `inspection-${targetId}-${nextTick}`,
+          tick: nextTick,
+          message: `CV predicted ${prediction.replaceAll("_", " ")} with ${confidencePercent}% confidence.`,
+        },
+        {
+          id: `belief-update-${targetId}-${nextTick}`,
+          tick: nextTick,
+          message: "Digital twin belief updated.",
+        },
+        ...(remainingUninspected
+          ? []
+          : [
+              {
+                id: `agent-complete-${targetId}-${nextTick}`,
+                tick: nextTick,
+                message: "All plants have been inspected. Scouting complete.",
+              },
+            ]),
+      ],
+      recommendation:
+        prediction === "healthy"
+          ? {
+              title: "No treatment needed",
+              body: "The inspected plant appears healthy. Continue scouting nearby plants.",
+              nextAction: "Inspect adjacent plants around the healthy sample.",
+            }
+          : {
+              title: "Targeted scouting recommended",
+              body: "Disease signal detected. Prioritize neighboring plants before treatment.",
+              nextAction: "Inspect adjacent plants around the detected signal.",
+            },
+    });
+  },
+  cancelAgentRun: () => {
+    const current = get();
+    set({
+      agentRunStatus: "idle",
+      activeRobotId: undefined,
+      activeTargetPlantId: undefined,
+      activePath: [],
+      activePathIndex: 0,
+      robots: current.robots.map((item) => ({ ...item, status: "idle", targetPlantId: undefined })),
+      plants: current.plants.map((plant) => ({ ...plant, isCurrentTarget: false })),
+    });
+  },
 }));
 
 export const simulationActions = {
@@ -152,4 +387,8 @@ export const simulationActions = {
   selectPlant: (plantId: string) => useSimulationStore.getState().selectPlant(plantId),
   clearSelectedPlant: () => useSimulationStore.getState().clearSelectedPlant(),
   inspectSelectedPlant: () => useSimulationStore.getState().inspectSelectedPlant(),
+  runAgentStep: () => useSimulationStore.getState().runAgentStep(),
+  advanceRobotAlongPath: () => useSimulationStore.getState().advanceRobotAlongPath(),
+  completeAgentInspection: () => useSimulationStore.getState().completeAgentInspection(),
+  cancelAgentRun: () => useSimulationStore.getState().cancelAgentRun(),
 };

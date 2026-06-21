@@ -26,3 +26,9 @@ Severity values:
 - `late_blight = 0.90`
 
 This is an MVP heuristic, not a calibrated plant pathology model or a lesion-coverage classifier. The real backend CV flow will replace the mock step later.
+
+## Autonomous Scouting Loop
+
+The frontend currently owns the scouting loop for the hackathon MVP. When you click `Run Agent Step`, the app picks a target plant, plans a simple Manhattan path across the frontend greenhouse grid, animates the robot cell by cell, pauses in a processing state, and then runs the same mock CV inspection flow used for manual selection.
+
+The backend pathing is not used yet because the frontend greenhouse grid is `20x40` and the backend MDP grid is different. The loop updates the selected plant, belief map, metrics, agent log, and recommendation only after the mock inspection finishes.
