@@ -1,7 +1,15 @@
 import { Card } from "@/components/layout/Card";
+import type { Plant } from "@/lib/types";
 import { MapLegend } from "./MapLegend";
+import { PlantCell } from "./PlantCell";
 
-export function BeliefMap() {
+interface BeliefMapProps {
+  plants: Plant[];
+  rows: number;
+  cols: number;
+}
+
+export function BeliefMap({ plants, rows, cols }: BeliefMapProps) {
   return (
     <Card
       className="flex h-full min-h-[300px] flex-col overflow-hidden xl:min-h-0"
@@ -9,14 +17,18 @@ export function BeliefMap() {
       subtitle="What the agent currently believes after scouting observations."
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-[#C9DDD6] bg-[#EEF6F3]">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(63,125,111,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(63,125,111,0.08)_1px,transparent_1px)] bg-[size:28px_28px]" />
-          <div className="relative px-6 text-center">
-            <p className="text-sm font-medium text-[#587068]">Belief map placeholder</p>
-            <p className="mt-1.5 text-xs text-[#7A8D86]">Agent knowledge begins empty and changes after inspections.</p>
+        <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-[#C9DDD6] bg-[#EEF6F3] p-3">
+          <div
+            aria-label={`${rows} by ${cols} digital twin belief grid`}
+            className="grid w-full max-w-5xl gap-px"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            {plants.map((plant) => (
+              <PlantCell key={plant.id} plant={plant} variant="belief" />
+            ))}
           </div>
         </div>
-        <MapLegend />
+        <MapLegend variant="belief" />
       </div>
     </Card>
   );

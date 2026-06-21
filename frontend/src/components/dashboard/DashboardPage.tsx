@@ -1,31 +1,65 @@
+"use client";
+
+import Link from "next/link";
 import { BeliefMap } from "@/components/simulation/BeliefMap";
 import { FarmMap } from "@/components/simulation/FarmMap";
 import { SimulationToolbar } from "@/components/simulation/SimulationToolbar";
+import { simulationActions, useSimulationStore } from "@/store/simulationStore";
 import { AgentLog } from "./AgentLog";
 import { MetricsPanel } from "./MetricsPanel";
 import { RecommendationPanel } from "./RecommendationPanel";
 import { SensorDataPanel } from "./SensorDataPanel";
 
 export function DashboardPage() {
+  const plants = useSimulationStore((simulation) => simulation.plants);
+  const robots = useSimulationStore((simulation) => simulation.robots);
+  const rows = useSimulationStore((simulation) => simulation.rows);
+  const cols = useSimulationStore((simulation) => simulation.cols);
+  const metrics = useSimulationStore((simulation) => simulation.metrics);
+  const environment = useSimulationStore((simulation) => simulation.environment);
+  const agentLogs = useSimulationStore((simulation) => simulation.agentLogs);
+  const recommendation = useSimulationStore((simulation) => simulation.recommendation);
+  const showActualRiskOverlay = useSimulationStore((simulation) => simulation.showActualRiskOverlay);
+
+  if (plants.length === 0) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F5F7EF] px-5">
+        <section className="w-full max-w-md rounded-xl border border-[#DDE5D8] bg-white p-8 text-center shadow-sm">
+          <h1 className="text-xl font-semibold text-[#1F2A24]">No greenhouse generated yet.</h1>
+          <p className="mt-2 text-sm text-[#667065]">Configure the growing conditions before opening the simulation workspace.</p>
+          <Link href="/" className="mt-5 inline-flex rounded-lg bg-[#2E7D32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#256629]">
+            Go to configuration
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[#F5F7EF] text-[#1F2A24] xl:h-screen xl:overflow-hidden">
       <main className="mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col gap-3 px-5 py-3 sm:px-8 lg:px-10">
-        <SimulationToolbar />
-
+        <SimulationToolbar
+          showActualRiskOverlay={showActualRiskOverlay}
+          onToggleActualRiskOverlay={simulationActions.toggleActualRiskOverlay}
+          onReset={simulationActions.resetSimulation}
+        />
         <div className="grid min-h-0 gap-3 lg:grid-cols-2 xl:flex-1">
           <FarmMap
             title="Real Greenhouse"
             subtitle="Physical farm view. Ground truth remains hidden unless revealed."
-            placeholder="Real farm map placeholder"
+            plants={plants}
+            robots={robots}
+            rows={rows}
+            cols={cols}
+            showActualRiskOverlay={showActualRiskOverlay}
           />
-          <BeliefMap />
+          <BeliefMap plants={plants} rows={rows} cols={cols} />
         </div>
-
         <div className="grid shrink-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricsPanel />
-          <SensorDataPanel />
-          <AgentLog />
-          <RecommendationPanel />
+          <MetricsPanel metrics={metrics} />
+          <SensorDataPanel environment={environment} />
+          <AgentLog entries={agentLogs} />
+          <RecommendationPanel recommendation={recommendation} />
         </div>
       </main>
     </div>

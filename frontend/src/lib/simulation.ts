@@ -1,1 +1,3 @@
-export const simulationPlaceholder = {};
+export function noopSimulationStep() {
+  return null;
+}

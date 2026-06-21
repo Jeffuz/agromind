@@ -1,54 +1,77 @@
-export interface EnvironmentParams {
-  temperature: number;
+export type EnvironmentParams = {
   humidity: number;
+  temperature: number;
+  light: number;
   soilMoisture: number;
-}
+};
 
-export type DiseaseLabel = "healthy" | "at-risk" | "diseased";
+export type DiseaseLabel =
+  | "healthy"
+  | "early_blight"
+  | "late_blight"
+  | "leaf_mold";
 
 export type BeliefLabel = "unknown" | DiseaseLabel;
 
-export interface Plant {
+export type Plant = {
   id: string;
   row: number;
-  column: number;
-  diseaseLabel: DiseaseLabel;
+  col: number;
+  trueLabel: DiseaseLabel;
   beliefLabel: BeliefLabel;
-}
+  actualRisk: number;
+  beliefRisk: number;
+  inspected: boolean;
+  isCurrentTarget: boolean;
+};
 
-export interface Robot {
+export type Robot = {
   id: string;
   row: number;
-  column: number;
-}
+  col: number;
+  targetPlantId?: string;
+  status: "idle" | "moving" | "inspecting";
+};
 
-export interface Metrics {
-  healthyPlants: number;
-  atRiskPlants: number;
-  diseasedPlants: number;
-}
+export type Metrics = {
+  totalPlants: number;
+  inspectedPlants: number;
+  inspectionCoverage: number;
+  diseaseSignalsFound: number;
+  estimatedSprayAvoided: number;
+  agentConfidence: number;
+};
 
-export interface AgentLogEntry {
+export type AgentLogEntry = {
   id: string;
+  tick: number;
   message: string;
-  timestamp: string;
-}
+};
 
-export interface Recommendation {
+export type Recommendation = {
+  title: string;
+  body: string;
+  nextAction?: string;
+};
+
+export type ScenarioPreset = {
   id: string;
-  message: string;
-}
+  name: string;
+  description: string;
+  environment: EnvironmentParams;
+};
 
-export interface SimulationState {
+export type SimulationState = {
+  phase: "config" | "dashboard";
+  tick: number;
+  rows: number;
+  cols: number;
+  robotCount: number;
   environment: EnvironmentParams;
   plants: Plant[];
   robots: Robot[];
+  showActualRiskOverlay: boolean;
   metrics: Metrics;
-  isRunning: boolean;
-}
-
-export interface ScenarioPreset {
-  id: string;
-  name: string;
-  environment: EnvironmentParams;
-}
+  agentLogs: AgentLogEntry[];
+  recommendation?: Recommendation;
+};
