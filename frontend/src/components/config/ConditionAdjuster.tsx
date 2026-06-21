@@ -2,7 +2,9 @@
 
 import { Card } from "@/components/layout/Card";
 import type { EnvironmentParams } from "@/lib/types";
-import { defaultEnvironment, simulationActions, useSimulationStore } from "@/store/simulationStore";
+import { 
+  // defaultEnvironment, 
+  simulationActions, useSimulationStore } from "@/store/simulationStore";
 
 const conditions: Array<{
   key: keyof EnvironmentParams;
@@ -31,11 +33,11 @@ export function ConditionAdjuster() {
       className="h-full overflow-hidden"
       title="Environment Conditions"
       subtitle="These values seed hidden disease pressure before scouting begins."
-      action={
-        <button type="button" onClick={() => simulationActions.setEnvironment({ ...defaultEnvironment })} className="shrink-0 text-xs font-medium text-[#2E7D32]">
-          Reset to Defaults
-        </button>
-      }
+      // action={
+      //   <button type="button" onClick={() => simulationActions.setEnvironment({ ...defaultEnvironment })} className="shrink-0 text-xs font-medium text-[#2E7D32]">
+      //     Reset to Defaults
+      //   </button>
+      // }
     >
       <div className="divide-y divide-[#E3E7DD]">
         {conditions.map((condition) => {
