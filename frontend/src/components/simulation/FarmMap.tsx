@@ -19,6 +19,7 @@ interface FarmMapProps {
   rows?: number;
   cols?: number;
   showActualRiskOverlay?: boolean;
+  interactive?: boolean;
 }
 
 export function FarmMap({
@@ -30,6 +31,7 @@ export function FarmMap({
   rows = 0,
   cols = 0,
   showActualRiskOverlay = false,
+  interactive = true,
 }: FarmMapProps) {
   const hasGreenhouse = plants.length > 0 && rows > 0 && cols > 0;
 
@@ -44,8 +46,9 @@ export function FarmMap({
                 robots={robots}
                 rows={rows}
                 cols={cols}
-                mode="real"
-                showActualRiskOverlay={showActualRiskOverlay}
+              mode="real"
+              showActualRiskOverlay={showActualRiskOverlay}
+              interactive={interactive}
               />
             </>
           ) : (

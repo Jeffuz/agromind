@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { FiArrowDown, FiArrowLeft, FiArrowRight, FiArrowUp, FiZoomIn, FiZoomOut } from "react-icons/fi";
+import { FiZoomIn, FiZoomOut } from "react-icons/fi";
 import { Color, InstancedMesh, Object3D, OrthographicCamera, Vector3 } from "three";
 import type { Plant, Robot } from "@/lib/types";
 
@@ -14,6 +14,7 @@ interface GreenhouseScene3DProps {
   cols: number;
   mode: "real" | "belief";
   showActualRiskOverlay?: boolean;
+  interactive?: boolean;
 }
 
 interface CameraControlApi {
@@ -275,11 +276,11 @@ function Rover({ robot, rows, cols }: { robot: Robot; rows: number; cols: number
   );
 }
 
-function Scene({ plants, robots = [], rows, cols, mode, showActualRiskOverlay, controlsRef }: GreenhouseScene3DProps & { controlsRef: MutableRefObject<CameraControlApi | null> }) {
+function Scene({ plants, robots = [], rows, cols, mode, showActualRiskOverlay, interactive = true, controlsRef }: GreenhouseScene3DProps & { controlsRef: MutableRefObject<CameraControlApi | null> }) {
   return (
     <>
       <color attach="background" args={[mode === "real" ? "#8A7655" : "#EEF3F0"]} />
-      <CameraControls controlsRef={controlsRef} />
+      {interactive && <CameraControls controlsRef={controlsRef} />}
       <ambientLight intensity={1.35} />
       <directionalLight position={[6, 10, 8]} intensity={1.55} color="#FFFDF4" />
       <directionalLight position={[-5, 5, -4]} intensity={0.45} color="#D9E8DD" />
@@ -306,14 +307,14 @@ export function GreenhouseScene3D(props: GreenhouseScene3DProps) {
         }}
         style={{
           background: props.mode === "real" ? "#8A7655" : "#EEF3F0",
-          cursor: "grab",
+          cursor: props.interactive === false ? "default" : "grab",
           touchAction: "none",
         }}
       >
         <Scene {...props} controlsRef={controlsRef} />
       </Canvas>
 
-      <div className="absolute left-2 top-2 flex gap-1 rounded-lg border border-[#D6D9CC] bg-white/90 p-1 shadow-sm">
+      {props.interactive !== false && <div className="absolute left-2 top-2 flex gap-1 rounded-lg border border-[#D6D9CC] bg-white/90 p-1 shadow-sm">
         <button type="button" aria-label="Zoom in" onClick={() => controlsRef.current?.zoomIn()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
           <FiZoomIn />
         </button>
@@ -333,7 +334,7 @@ export function GreenhouseScene3D(props: GreenhouseScene3DProps) {
         <button type="button" aria-label="Move right" onClick={() => controlsRef.current?.panRight()} className="rounded p-1.5 text-[#42534A] hover:bg-[#EAF5EA]">
           <FiArrowRight />
         </button> */}
-      </div>
+      </div>}
     </div>
   );
 }

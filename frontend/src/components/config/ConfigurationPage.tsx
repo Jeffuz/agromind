@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FarmMap } from "@/components/simulation/FarmMap";
-import { simulationActions } from "@/store/simulationStore";
+import { generateGreenhouse } from "@/lib/diseaseMap";
+import { simulationActions, useSimulationStore } from "@/store/simulationStore";
 import { ConditionAdjuster } from "./ConditionAdjuster";
 import { QuickStartScenarios } from "./QuickStartScenarios";
 import { SimulationSettings } from "./SimulationSettings";
@@ -10,6 +12,14 @@ import { WhatHappensNext } from "./WhatHappensNext";
 
 export function ConfigurationPage() {
   const router = useRouter();
+  const rows = useSimulationStore((simulation) => simulation.rows);
+  const cols = useSimulationStore((simulation) => simulation.cols);
+  const robotCount = useSimulationStore((simulation) => simulation.robotCount);
+  const environment = useSimulationStore((simulation) => simulation.environment);
+  const preview = useMemo(
+    () => generateGreenhouse({ rows, cols, robotCount, environment }),
+    [cols, environment, robotCount, rows],
+  );
 
   function generateSimulation() {
     simulationActions.generateSimulation();
@@ -37,7 +47,14 @@ export function ConfigurationPage() {
             <QuickStartScenarios />
           </div>
           <div className="grid min-h-0 gap-4 lg:grid-rows-[minmax(0,1fr)_auto_auto]">
-            <FarmMap />
+            <FarmMap
+              plants={preview.plants}
+              robots={preview.robots}
+              rows={rows}
+              cols={cols}
+              showActualRiskOverlay
+              interactive={false}
+            />
             <WhatHappensNext />
             <div className="flex justify-end gap-3">
               <button type="button" className="rounded-lg border border-[#CCD6C8] bg-white px-5 py-2.5 text-sm font-medium text-[#39463E] hover:bg-[#F7F8F3]">

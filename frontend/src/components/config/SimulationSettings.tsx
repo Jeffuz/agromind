@@ -6,7 +6,6 @@ import { simulationActions, useSimulationStore } from "@/store/simulationStore";
 export function SimulationSettings() {
   const rows = useSimulationStore((simulation) => simulation.rows);
   const cols = useSimulationStore((simulation) => simulation.cols);
-  const robotCount = useSimulationStore((simulation) => simulation.robotCount);
 
   return (
     <Card className="h-full overflow-hidden" title="Simulation Settings">
@@ -29,16 +28,9 @@ export function SimulationSettings() {
         </label>
         <label>
           <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-wider text-[#667065]">Robot Count</span>
-          <select
-            value={robotCount}
-            onChange={(event) => simulationActions.setRobotCount(Number(event.target.value))}
-            className="w-full rounded-xl border border-[#DDE5D8] bg-[#FCFCF8] px-3 py-2 text-xs font-medium text-[#1F2A24]"
-          >
-            <option value={1}>1 robot</option>
-            <option value={2}>2 robots</option>
-            <option value={4}>4 robots</option>
-          </select>
-          <span className="mt-1.5 block text-[11px] text-[#667065]">Recommended for MVP</span>
+          <div className="w-full rounded-xl border border-[#DDE5D8] bg-[#F3F5EF] px-3 py-2 text-xs font-medium text-[#1F2A24]">
+            1 robot
+          </div>
         </label>
       </div>
     </Card>
