@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/layout/PageHeader";
 import { FarmMap } from "@/components/simulation/FarmMap";
 import { ConditionAdjuster } from "./ConditionAdjuster";
 import { QuickStartScenarios } from "./QuickStartScenarios";
@@ -8,10 +7,6 @@ import { WhatHappensNext } from "./WhatHappensNext";
 export function ConfigurationPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#050c0d] text-slate-100 lg:h-screen lg:overflow-hidden">
-      <PageHeader
-        subtitle="AI-Powered Crop Health Intelligence"
-        status="Configuration Mode"
-      />
       <main className="mx-auto flex w-full max-w-[1480px] min-h-0 flex-1 flex-col px-5 py-5 sm:px-8 lg:px-10 lg:py-4">
         <div className="mb-4 max-w-3xl shrink-0">
           <div>
